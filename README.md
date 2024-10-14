@@ -1,29 +1,25 @@
-# GitHub Best Practices Template
+# Conner's Retime Tool (CRT)
 
-This is **a template repository** for helping others to follow the best practices when developing GitHub projects.
+CRT is a cross-platform software that aids speedrunners and moderators in finding the accurate time of a speedrun with or without loads. 
 
-You will find a collection of files and configuration recommendations for kick-starting a new project in GitHub. 
+This is an evolution from PyTime, my previous retimer project. CRT retains all of the features of PyTime, but adds features, like on-the-fly timing, load editing, various optimizations, and more!
 
-You can start by following the instructions at the [guidelines](guidelines.md) file.
+## Installation
 
-## ⚒️ Using this template for your project
+- [Windows](https://github.com/connerglover/Conners-Retime-Tool/releases/latest/crt.exe)
+- [Mac OS](https://github.com/connerglover/Conners-Retime-Tool/releases/latest/crt.exe)
 
-To use this template, you can create a new repository by clicking on _Use this template_ button. 
+1. Navigate to the [releases](https://github.com/connerglover/Conners-Retime-Tool/releases/) page, here is every binary of PyTime.
+2. Locate your desired binary, the version is indicated by the title of each release, as every binary is named the same.
+3. Once the binary has been located, click on it to download. Once the download has finished, open the file. If you're on Mac, you must drag it to your Applications folder before opening it.
 
-The new repository will use this one as a template, meaning that it will contain all the files. 
-Once the new repository is created, you can edit its files to adapt them to your needs.
+## Usage
 
-## ☑️ Guidelines & Contributing
+To use CRT refer to the following step-by-step tutorial.
 
-You will find a guided description of the steps you should follow in the [guidelines](guidelines.md) file.
-
-Please, read carefully the guidelines and adapt them to your needs.
-
-If you find any issue or have any suggestion, please, feel free to open an issue. Just remember that:
-
-1. Anyone participating will be subject to and agrees to sign on to the [Code of Conduct](CODE_OF_CONDUCT.md).
-
-2. The development and community management of this project follows the governance rules described in the [GOVERNANCE.md](GOVERNANCE.md) document.
+1. Set the framerate. If you're on Youtube, then you can right-click the YouTube video player and click "Stats for nerd" at "Current / Optimal Res" where a resolution is visible, the resolution will be followed by @XX, the XX is the video's framerate, input that into the input box called "FPS."
+2. Get the frame of the start of your speedrun. If you're on YouTube then you can right-click on the video player and press "Copy Debug Info". You can then paste this into the frame section, by either pressing the "Paste" button next to the input or clicking inside the text box and pasting with [Ctrl + V]. CRT will parse the debug info into a frame Do the same for the end of the speedrun.
+3. Find the loads. If you speedrun doesn't have any loads
 
 ## 📚 References
 
