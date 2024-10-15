@@ -8,7 +8,7 @@ There are several ways in which you can contribute, beyond writing code. The goa
 
 Do you have a question? Feel free to [open an issue](https://github.com/YOUR-ORGANIZATION/YOUR-PROJECT/issues/new?assignees=&labels=question&template=question.md).
 
-Project maintainers will be eager to listen from you and help you out. Please, try to compose a clear and concise question. The more information you provide, the better we will be able to help you.
+We will be eager to listen to you and help you out. Please, try to compose a clear and concise question. The more information you provide, the better we will be able to help you.
 
 ## Reporting Issues
 
@@ -16,11 +16,11 @@ Do you have you identified a reproducible problem in our code? or have a feature
 
 ### Look For an Existing Issue
 
-Sometimes the issue you want to report is being already addressed, or is planned to be addressed soon. Before you create a new issue, please do a search in [open issues](https://github.com/YOUR-ORGANIZATION/YOUR-PROJECT/issues) to see if the issue or feature request has already been filed.
+Sometimes the issue you want to report is already being addressed or is planned to be addressed soon. Before you create a new issue, please do a search in [open issues](https://github.com/connerglover/Conners-Retime-Tool/issues) to see if the issue or feature request has already been filed.
 
 If you find your issue already exists, do not hesitate to make relevant comments and add your [reaction](https://github.com/blog/2119-add-reactions-to-pull-requests-issues-and-comments). Please, use a reaction in place of a "+1" comment, we believe it's easy: 👍 for upvoting and 👎 for downvoting.
 
-If you cannot find an existing issue that describes your bug or feature, [create a new issue](https://github.com/YOUR-ORGANIZATION/YOUR-PROJECT/issues/new?assignees=&labels=&template=proposal.md). The template will guide you on the issue reporting.
+If you cannot find an existing issue that describes your bug or feature, [create a new issue](https://github.com/connerglover/Conners-Retime-Tool/issues/new?assignees=&labels=&template=proposal.md). The template will guide you on the issue reporting.
 
 ### Writing Good Bug Reports and Feature Requests
 
@@ -30,11 +30,7 @@ As you can imagine, the more information you can provide, the more likely someon
 
 ### Creating Pull Requests
 
-If you feel brave enough to contribute directly code to the repository, you are more than welcome. Feel free to submit pull requests to this repository, which we will review according to the governance rules of the project.
-
-### Governance
-
-Any contribution you send to us will be addressed by the project maintainers following the governance rules described in the [GOVERNANCE.md](GOVERNANCE.md)
+If you feel brave enough to contribute directly to the repository, you are more than welcome. Feel free to submit pull requests to this repository, which we will review according to the governance rules of the project.
 
 # Thank You!
 
