@@ -13,6 +13,6 @@ def create_main_window() -> sg.Window:
             [sg.Text("Loads:", font=("Helvetica", 20), justification="right"), sg.StatusBar("00.000", key="loads_display", enable_events=True, font=("Helvetica", 20), size=(17,1), tooltip="Click to Copy Time")]
         ]
 
-    window = sg.Window("Conner's Retime Tool", layout)
+    window = sg.Window("Conner's Retime Tool", layout, icon="../assets/icon/icon.ico")
     
     return window
