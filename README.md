@@ -7,11 +7,11 @@ This is an evolution from PyTime, my previous retimer project. CRT retains all o
 ## Installation
 
 - [Windows](https://github.com/connerglover/Conners-Retime-Tool/releases/latest/crt.exe)
-- [Mac OS](https://github.com/connerglover/Conners-Retime-Tool/releases/latest/crt.dmg)
+- [Mac OS](https://github.com/connerglover/Conners-Retime-Tool/releases/latest/crt.app)
 
 1. Navigate to the [releases](https://github.com/connerglover/Conners-Retime-Tool/releases/) page, here is every binary of PyTime.
 2. Locate your desired binary, the version is indicated by the title of each release, as every binary is named the same.
-3. Once the binary has been located, click on it to download. Once the download has finished, open the file. If you're on Mac, you must drag it to your Applications folder before opening it.
+3. Once the binary has been located, click on its name to download it. Once the download has finished, open the file.
 
 ## Usage
 
