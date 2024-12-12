@@ -113,6 +113,9 @@ class App:
                 else:
                     raise ValueError("Invalid key provided.")
                 self._show_error(e)
+        elif "." in time:
+            time_frame = self.time.framerate * d(time)
+            time_frame = int(round(time_frame, 0))
         else:
             time_frame = self.clean_frame(time)
         
@@ -214,6 +217,9 @@ class App:
                 else:
                     raise ValueError("Invalid key provided.")
                 self._show_error(e)
+        elif "." in time:
+            time_frame = self.time.framerate * d(time)
+            time_frame = int(round(time_frame, 0))
         else:
             time_frame = self.clean_frame(time)
         
