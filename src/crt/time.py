@@ -23,47 +23,40 @@ class Time:
         self.loads = loads if loads is not None else []
         self.start_frame = start_frame
         self.end_frame = end_frame
-        
         self.framerate = framerate
         self.precision = precision
         
-        self.length = int(self.end_frame - self.start_frame)
-        self.length_loads = int(self.length - sum(load.length for load in self.loads))
-
-        self.time = round(d(self.length / self.framerate), self.precision)
-        self.time_loads = round(d(self.length_loads / self.framerate), self.precision)
-        
-        self._update_mod_note()
-        
-        pass
+    @property
+    def length(self) -> int:
+        """The total length in frames."""
+        return int(self.end_frame - self.start_frame)
     
-    def _update_mod_note(self):
-        """
-        Updates the mod note.
-        """
+    @property
+    def length_loads(self) -> int:
+        """The length in frames excluding loads."""
+        return int(self.length - sum(load.length for load in self.loads))
+    
+    @property
+    def time(self) -> d:
+        """The total time including loads."""
+        if self.framerate == 0:
+            return d(0.000)
+        return round(d(self.length / d(self.framerate)), self.precision)
+    
+    @property
+    def time_loads(self) -> d:
+        """The total time excluding loads."""
+        if self.framerate == 0:
+            return d(0.000)
+        return round(d(self.length_loads / d(self.framerate)), self.precision)
+    
+    @property
+    def mod_note(self) -> str:
+        """The formatted mod note."""
         base_note = f"Mod Note: Retimed to "
         if self.time != self.time_loads:
-            self.mod_note = f"{base_note}{self.src_format(True)} without loads, and {self.src_format()} with loads at {self.framerate} FPS using {self.GITHUB_LINK}"
-        else:
-            self.mod_note = f"{base_note}{self.src_format()} at {self.framerate} FPS using {self.GITHUB_LINK}"
-    
-    def _recalculate(self) -> None:
-        """
-        Recalculates the time.
-        """
-        self.length = int(self.end_frame - self.start_frame)
-        self.length_loads = int(self.length - sum(load.length for load in self.loads))
-
-        if self.framerate != 0:
-            self.time = round(d(self.length / d(self.framerate)), self.precision)
-            self.time_loads = round(d(self.length_loads / d(self.framerate)), self.precision)
-        else:
-            self.time = d(0.000)
-            self.time_loads = d(0.000)
-        
-        self._update_mod_note()
-        
-        return
+            return f"{base_note}{self.src_format(True)} without loads, and {self.src_format()} with loads at {self.framerate} FPS using {self.GITHUB_LINK}"
+        return f"{base_note}{self.src_format()} at {self.framerate} FPS using {self.GITHUB_LINK}"
     
     def mutate(self, start_frame: int = None, end_frame: int = None, framerate: d = None) -> None:
         """
@@ -77,8 +70,6 @@ class Time:
         self.start_frame = start_frame if start_frame is not None else self.start_frame
         self.end_frame = end_frame if end_frame is not None else self.end_frame
         self.framerate = framerate if framerate is not None else self.framerate
-        
-        self._recalculate()
         
         return
     
@@ -105,8 +96,6 @@ class Time:
         """
         del self.loads[index]
         
-        self._recalculate()
-        
         return
     
     def mutate_load(self, index: int, start_frame: int = None, end_frame: int = None) -> None:
@@ -126,8 +115,6 @@ class Time:
         if end_frame is not None:
             self.loads[index].end_frame = end_frame
             
-        self._recalculate()
-        
         return
     
     def add_load(self, start_frame: int, end_frame: int) -> None:
@@ -149,8 +136,6 @@ class Time:
         
         load = Load(start_frame, end_frame)
         self.loads.append(load)
-        
-        self._recalculate()
         
         return
 
