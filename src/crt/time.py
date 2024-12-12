@@ -47,7 +47,7 @@ class Time:
         else:
             self.mod_note = f"{base_note}{self.src_format()} at {self.framerate} FPS using {self.GITHUB_LINK}"
     
-    def recalculate(self) -> None:
+    def _recalculate(self) -> None:
         """
         Recalculates the time.
         """
@@ -74,27 +74,11 @@ class Time:
             end_frame (int): The end frame of the time.
             framerate (d): The framerate of the video.
         """
-        if start_frame is not None and end_frame is not None:
-            if start_frame > end_frame:
-                raise ValueError("The time ends before it starts.")
-            else:
-                self.start_frame = start_frame
-                self.end_frame = end_frame
-        elif start_frame is not None:
-            if start_frame > self.end_frame and self.end_frame != 0:
-                raise ValueError("The time ends before it starts.")
-            else:
-                self.start_frame = start_frame
-        elif end_frame is not None:
-            if self.start_frame > end_frame:
-                raise ValueError("The time ends before it starts.")
-            else:
-                self.end_frame = end_frame
-                
-        if framerate is not None:
-            self.framerate = d(framerate)
+        self.start_frame = start_frame if start_frame is not None else self.start_frame
+        self.end_frame = end_frame if end_frame is not None else self.end_frame
+        self.framerate = framerate if framerate is not None else self.framerate
         
-        self.recalculate()
+        self._recalculate()
         
         return
     
@@ -121,7 +105,7 @@ class Time:
         """
         del self.loads[index]
         
-        self.recalculate()
+        self._recalculate()
         
         return
     
@@ -142,7 +126,7 @@ class Time:
         if end_frame is not None:
             self.loads[index].end_frame = end_frame
             
-        self.recalculate()
+        self._recalculate()
         
         return
     
@@ -166,7 +150,7 @@ class Time:
         load = Load(start_frame, end_frame)
         self.loads.append(load)
         
-        self.recalculate()
+        self._recalculate()
         
         return
 
