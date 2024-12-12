@@ -1,4 +1,5 @@
-from crt.entrypoint import run
+from crt import App
 
 if __name__ == "__main__":
-    run()
+    app = App()
+    app.run()

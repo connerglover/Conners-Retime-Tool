@@ -1,59 +1,95 @@
 import PySimpleGUI as sg
+import json
+import re
 
-from crt.core import Load
-from crt.core import debug_info_to_frame
-from crt.core import clean_frame
+from decimal import Decimal as d
 
-def create_load_edit_window(load: Load):
-    load_edit_layout = [
-        [sg.Text("Edit Load", font=("Helvetica", 24))],
-        [sg.Push(), sg.Text(f"Start Frame", font=("Helvetica", 16), justification="right"), sg.Input(default_text=str(load.start_frame), key="start", enable_events=True, font=("Helvetica", 16), pad=((5, 0), (0, 0)), size=(12, 1)), sg.Button("Paste", font=("Helvetica", 10), key="start_paste")],
-        [sg.Push(), sg.Text(f"End Frame", font=("Helvetica", 16), justification="right"), sg.Input(default_text=load.end_frame, key="end", enable_events=True, font=("Helvetica", 16), pad=((5, 0), (0, 0)), size=(12, 1)), sg.Button("Paste", font=("Helvetica", 10), key="end_paste")],
-        [sg.Button("Save Edits", font=("Helvetica", 14)), sg.Button("Discard Changes", font=("Helvetica", 14))]
-    ]
+from crt.core.load import Load
+from crt.core.time import Time
+
+class LoadEditWindow:
+    def __init__(self, load: Load, framerate: d):
+        self.load = load
+        self.framerate = framerate
+        self.window = None
+        
+    def create_layout(self):
+        return [
+            [sg.Text("Edit Load", font=("Helvetica", 24))],
+            [sg.Push(), sg.Text(f"Start Frame", font=("Helvetica", 16), justification="right"), 
+             sg.Input(default_text=str(self.load.start_frame), key="start", enable_events=True, 
+                     font=("Helvetica", 16), pad=((5, 0), (0, 0)), size=(12, 1)), 
+             sg.Button("Paste", font=("Helvetica", 10), key="start_paste")],
+            [sg.Push(), sg.Text(f"End Frame", font=("Helvetica", 16), justification="right"), 
+             sg.Input(default_text=self.load.end_frame, key="end", enable_events=True, 
+                     font=("Helvetica", 16), pad=((5, 0), (0, 0)), size=(12, 1)), 
+             sg.Button("Paste", font=("Helvetica", 10), key="end_paste")],
+            [sg.Button("Save Edits", font=("Helvetica", 14)), 
+             sg.Button("Discard Changes", font=("Helvetica", 14))]
+        ]
     
-    load_edit_window = sg.Window("Load Editor", load_edit_layout, resizable=False)
+    def handle_frame_input(self, values, key):
+        value = values[key]
+        if value and value[-1] == "}":
+            try:
+                frame = self.debug_info_to_frame(value)
+            except ValueError as e:
+                frame = 0
+                sg.popup_error("Error", e, title="Error")
+        else:
+            frame = self.clean_frame(value)
+
+        self.window[key].update(int(frame))
     
-    while True:
-        event, values = load_edit_window.read()
+    def debug_info_to_frame(self, debug_info: str) -> int:
+        debug_info = "{" + debug_info.split("{", 1)[-1]
         
-        if event == sg.WIN_CLOSED:
-            break
+        try:
+            parsed_debug_info = json.loads(debug_info)
+        except json.decoder.JSONDecodeError:
+            raise ValueError("The debug info provided is invalid.\nPlease re-enter debug info.")
         
-        if event == "Save Edits":
-            start = int(values["start"])
-            end = int(values["end"])
-            load = Load(start, end)
-            break
+        try:
+            cmt = parsed_debug_info["cmt"]
+        except KeyError:
+            raise ValueError("The debug info provided is invalid.\nPlease re-enter debug info.")
         
-        if event == "Discard Changes":
-            break
+        output = d(cmt) * d(self.framerate)
+        output = int(round(output, 0))
         
-        if event == "start":
-            start = values["start"]
-            if start and start[-1] == "}":
-                try:
-                    start_frame = debug_info_to_frame(start)
-                except ValueError as e:
-                    start_frame = 0
-                    sg.popup_error("Error", e, title="Error")
-            else:
-                start_frame = clean_frame(start)
+        return output
+    
+    def clean_frame(self, frame: str) -> int:
+        if any(char.isdigit() for char in frame):
+            cleaned_frame = int(re.sub(r"[^0-9]", "", frame))
+        else:
+            cleaned_frame = 0
+        
+        return cleaned_frame
+    
+    def run(self):
+        self.window = sg.Window("Load Editor", self.create_layout(), resizable=False)
+        
+        while True:
+            event, values = self.window.read()
             
-            load_edit_window["start"].update(int(start_frame))
-        
-        if event == "end":
-            end = values["end"]
-            if end and end[-1] == "}":
-                try:
-                    end_frame = debug_info_to_frame(start)
-                except ValueError as e:
-                    end_frame = 0
-                    sg.popup_error("Error", e, title="Error")
-            else:
-                end_frame = clean_frame(end)
+            if event == sg.WIN_CLOSED:
+                break
             
-            load_edit_window["end"].update(int(end_frame))
-    
-    load_edit_window.close()
-    return load
+            if event == "Save Edits":
+                start = int(values["start"])
+                end = int(values["end"])
+                self.load = Load(start, end)
+                break
+            
+            if event == "Discard Changes":
+                break
+            
+            if event == "start":
+                self.handle_frame_input(values, "start")
+            
+            if event == "end":
+                self.handle_frame_input(values, "end")
+        
+        self.window.close()
+        return self.load
