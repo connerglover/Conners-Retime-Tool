@@ -2,9 +2,12 @@ from dataclasses import dataclass
 
 @dataclass
 class Load:
+    """
+    A class that represents a load in a video.
+    """
     start_frame: int
     end_frame: int
 
     @property
     def length(self):
-        return self.end_frame - self.start_frame
+        return int(self.end_frame) - int(self.start_frame)

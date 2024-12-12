@@ -4,21 +4,29 @@ import re
 
 from decimal import Decimal as d
 
-from crt.core.time import Time
-from crt.gui.main_window import MainWindow
-from crt.gui.load_window import LoadWindow
+from crt.time import Time
+from crt.gui import MainWindow
+from crt.load_viewer.app import LoadViewer
 
 class App:
-    
+    """
+    Main application for CRT.
+    """
     def __init__(self):
+        """
+        Initializes the App class.
+        """
         self.time = Time()
         
         sg.theme("DarkGrey15")
         self.main_window = MainWindow()
     
     def _edit_loads(self):
+        """
+        Edits the loads.
+        """
         try:
-            load_window = LoadWindow(self.time, self.time.loads)
+            load_window = LoadViewer(self.time)
             load_window.run()
         except ValueError as e:
             self._show_error(e)
@@ -26,6 +34,12 @@ class App:
             self.main_window.window["loads_display"].update(self.time.iso_format(True))
     
     def _add_loads(self, values):
+        """
+        Adds the loads.
+        
+        Args:
+            values (dict): The values from the main window.
+        """
         start_frame = int(values["start_loads"])
         end_frame = int(values["end_loads"])
         
@@ -39,6 +53,16 @@ class App:
             sg.popup("Loads", "Load added successfully.")
     
     def debug_info_to_frame(self, time: Time, debug_info: str) -> int:
+        """
+        Converts debug info to a frame.
+        
+        Args:
+            time (Time): The time.
+            debug_info (str): The debug info.
+        
+        Returns:
+            int: The frame.
+        """
         debug_info = "{" + debug_info.split("{", 1)[-1]
         
         try:
@@ -56,14 +80,27 @@ class App:
         
         return output
 
-    def _handle_framerate(self, values):
+    def _handle_framerate(self, values: dict):
+        """
+        Handles the framerate.
+        
+        Args:
+            values (dict): The values from the main window.
+        """
         framerate = values["framerate"]
         framerate = self._clean_framerate(framerate)
         
         self.main_window.window["framerate"].update(framerate)
         self.time.mutate(framerate=framerate)
     
-    def _handle_time(self, values, key: str):
+    def _handle_time(self, values: dict, key: str):
+        """
+        Handles the time.
+        
+        Args:
+            values (dict): The values from the main window.
+            key (str): The key of the time.
+        """
         time = values[key]
         if time and time[-1] == "}":
             try:
@@ -90,7 +127,14 @@ class App:
         
         self.main_window.window[key].update(time_frame)
     
-    def _handle_loads(self, values, key: str):
+    def _handle_loads(self, values: dict, key: str):
+        """
+        Handles the loads.
+        
+        Args:
+            values (dict): The values from the main window.
+            key (str): The key of the loads.
+        """
         loads = values[key]
         if loads and loads[-1] == "}":
             try:
@@ -121,6 +165,15 @@ class App:
         return cleaned_framerate
 
     def clean_frame(self, frame: str) -> int:
+        """
+        Cleans the frame.
+        
+        Args:
+            frame (str): The frame.
+        
+        Returns:
+            int: The cleaned frame.
+        """
         if any(char.isdigit() for char in frame):
             cleaned_frame = int(re.sub(r"[^0-9]", "", frame))
         else:
@@ -128,14 +181,27 @@ class App:
         
         return cleaned_frame
     
-    def _paste_framerate(self, values):
+    def _paste_framerate(self, values: dict):
+        """
+        Pastes the framerate.
+        
+        Args:
+            values (dict): The values from the main window.
+        """
         framerate = sg.clipboard_get()
         framerate = self._clean_framerate(framerate)
         
         self.main_window.window["framerate"].update(framerate)
         self.time.mutate(framerate=framerate)
     
-    def _paste_time(self, values, key: str):
+    def _paste_time(self, values: dict, key: str):
+        """
+        Pastes the time.
+        
+        Args:
+            values (dict): The values from the main window.
+            key (str): The key of the time.
+        """
         time = sg.clipboard_get()
         if time and time[-1] == "}":
             try:
@@ -162,7 +228,14 @@ class App:
         
         self.main_window.window[key].update(time_frame)
     
-    def _paste_loads(self, values, key: str):
+    def _paste_loads(self, values: dict, key: str):
+        """
+        Pastes the loads.
+        
+        Args:
+            values (dict): The values from the main window.
+            key (str): The key of the loads.
+        """
         loads = sg.clipboard_get()
         if loads and loads[-1] == "}":
             try:
@@ -174,8 +247,11 @@ class App:
             loads = self.clean_frame(loads)
         
         self.main_window.window[key].update(loads)
-    
+        
     def run(self):
+        """
+        Runs the application.
+        """
         while True:
             event, values = self.main_window.read()
             
@@ -234,4 +310,10 @@ class App:
         self.main_window.close()
 
     def _show_error(self, message):
+        """
+        Shows the error.
+        
+        Args:
+            message (str): The message to show.
+        """
         sg.popup_error("Error", message, title="Error")

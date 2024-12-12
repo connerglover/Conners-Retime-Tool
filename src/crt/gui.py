@@ -1,10 +1,22 @@
 import PySimpleGUI as sg
 
 class MainWindow:
+    """
+    Main window for CRT.
+    """
     def __init__(self):
+        """
+        Initializes the MainWindow class.
+        """
         self.window = self._create_window()
     
     def _create_window(self) -> sg.Window:
+        """
+        Creates the main window.
+        
+        Returns:
+            sg.Window: The main window.
+        """
         layout = [
             [sg.Push(), sg.Text("Framerate (FPS)", font=("Helvetica", 16), justification="right"), sg.Input(default_text="60", key="framerate", enable_events=True, font=("Helvetica", 16), pad=((5, 0), (0, 0)), size=(12, 1)), sg.Button("Paste", font=("Helvetica", 10), key="framerate_paste")],
             [sg.Push(), sg.Text("Start Frame", font=("Helvetica", 16), justification="right"), sg.Input(default_text="0", key="start", enable_events=True, font=("Helvetica", 16), pad=((5, 0), (0, 0)), size=(12, 1)), sg.Button("Paste", font=("Helvetica", 10), key="start_paste")],
@@ -20,13 +32,31 @@ class MainWindow:
         return sg.Window("Conner's Retime Tool", layout, icon="icon.ico")
     
     def read(self):
+        """
+        Reads the main window.
+        
+        Returns:
+            tuple[str, Any]: The event and values.
+        """
         return self.window.read()
     
     def close(self):
+        """
+        Closes the main window.
+        """
         self.window.close()
     
     def __enter__(self):
+        """
+        Enters the main window.
+        
+        Returns:
+            MainWindow: The main window.
+        """
         return self
     
     def __exit__(self, exc_type, exc_val, exc_tb):
+        """
+        Exits the main window.
+        """
         self.close()
