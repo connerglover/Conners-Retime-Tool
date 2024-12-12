@@ -1,10 +1,10 @@
-from crt import App
+import crt
 
 def main():
     """
     Main function for CRT.
     """
-    app = App()
+    app = crt.App()
     app.run()
 
 if __name__ == "__main__":
