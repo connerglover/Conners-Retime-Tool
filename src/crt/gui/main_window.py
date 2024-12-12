@@ -1,5 +1,4 @@
 import PySimpleGUI as sg
-from os import path
 
 class MainWindow:
     def __init__(self):
