@@ -2,13 +2,11 @@
 
 CRT is a tool that aids speedrunners and moderators in finding the accurate time of a speedrun with or without loads. 
 
-This is an evolution from PyTime, my previous retimer project. CRT retains all of the features of PyTime, but adds features, like on-the-fly timing, load editing, various optimizations, and more!
-
 ## Installation
 
 - [Windows](https://github.com/connerglover/Conners-Retime-Tool/releases/latest/crt.exe)
 
-1. Navigate to the [releases](https://github.com/connerglover/Conners-Retime-Tool/releases/) page, here is every binary of PyTime.
+1. Navigate to the [releases](https://github.com/connerglover/Conners-Retime-Tool/releases/) page, here is every binary of CRT.
 2. Locate your desired binary, the version is indicated by the title of each release, as every binary is named the same.
 3. Once the binary has been located, click on its name to download it. Once the download has finished, open the file.
 
