@@ -7,7 +7,7 @@ class LoadEditorGUI:
     """
     Load editor GUI for CRT.
     """
-    def __init__(self, load: Load, framerate: d):
+    def __init__(self, load: Load, framerate: d, language: str = "en"):
         """
         Initializes the LoadEditorGUI class.
         
@@ -15,9 +15,20 @@ class LoadEditorGUI:
             load (Load): The load.
             framerate (d): The framerate.
         """
-        self.window = self._create_window(load, framerate)
+        match language:
+            case "en":
+                content = {
+                    "Edit Load": "Edit Load",
+                    "Start Frame": "Start Frame",
+                    "End Frame": "End Frame",
+                    "Save Edits": "Save Edits",
+                    "Paste": "Paste",
+                    "Discard Changes": "Discard Changes"
+                }
+        
+        self.window = self._create_window(load, framerate, language)
     
-    def _create_window(self, load: Load, framerate: d) -> sg.Window:
+    def _create_window(self, load: Load, framerate: d, content: dict) -> sg.Window:
         """
         Creates the load editor GUI.
         
@@ -29,17 +40,17 @@ class LoadEditorGUI:
             sg.Window: The load editor GUI.
         """
         layout = [
-            [sg.Text("Edit Load", font=("Helvetica", 24))],
-            [sg.Push(), sg.Text(f"Start Frame", font=("Helvetica", 16), justification="right"), 
+            [sg.Text(content["Edit Load"], font=("Helvetica", 24))],
+            [sg.Push(), sg.Text(content["Start Frame"], font=("Helvetica", 16), justification="right"), 
              sg.Input(default_text=str(load.start_frame), key="start", enable_events=True, 
                      font=("Helvetica", 16), pad=((5, 0), (0, 0)), size=(12, 1)), 
-             sg.Button("Paste", font=("Helvetica", 10), key="start_paste")],
-            [sg.Push(), sg.Text(f"End Frame", font=("Helvetica", 16), justification="right"), 
+             sg.Button(content["Paste"], font=("Helvetica", 10), key="start_paste")],
+            [sg.Push(), sg.Text(content["End Frame"], font=("Helvetica", 16), justification="right"), 
              sg.Input(default_text=str(load.end_frame), key="end", enable_events=True, 
                      font=("Helvetica", 16), pad=((5, 0), (0, 0)), size=(12, 1)), 
-             sg.Button("Paste", font=("Helvetica", 10), key="end_paste")],
-            [sg.Button("Save Edits", font=("Helvetica", 14)), 
-             sg.Button("Discard Changes", font=("Helvetica", 14))]
+             sg.Button(content["Paste"], font=("Helvetica", 10), key="end_paste")],
+            [sg.Button(content["Save Edits"], font=("Helvetica", 14)), 
+             sg.Button(content["Discard Changes"], font=("Helvetica", 14))]
         ]
 
         return sg.Window("Editing Load", layout, resizable=False, element_justification="left")

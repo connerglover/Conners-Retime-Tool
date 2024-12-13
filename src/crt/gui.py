@@ -15,8 +15,8 @@ class MainWindow:
         match language:
             case "en":
                 content = {
-                    "menu": [["File", ["New Time", "---", "Open Time", "---", "Save", "Save As", "---", "Settings", "---", "Exit"]], 
-                            ["Edit", ["Copy Mod Note", "Clear Loads", "---", "Add Loads", "Edit Loads"]], 
+                    "menu": [["File", ["New Time", "---", "'Open Time", "---", "Save", "Save As", "---", "Settings", "---", "Exit"]], 
+                            ["Edit", ["Copy Mod Note", "Clear Loads", "---", "Edit Loads"]], 
                             ["Help", ["Check for Updates", "---", "Report Issue", "Suggest Feature", "---", "About"]]],
                     "inputs": {
                         "framerate": "Framerate (FPS)",

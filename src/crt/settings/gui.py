@@ -4,18 +4,33 @@ import re
 from decimal import Decimal as d
 
 class SettingsGUI:
-    def __init__(self, settings: dict):
+    def __init__(self, settings: dict, language: str = "en"):
         self.enable_updates = settings["enable_updates"]
         self.theme = settings["theme"]
-        self.window = self._create_window(self.enable_updates, self.theme)
+        
+        match language:
+            case "en":
+                content = {
+                    "CRT Settings": "CRT Settings",
+                    "Automatically Check for Updates": "Automatically Check for Updates",
+                    "Theme": "Theme",
+                    "Automatic": "Automatic",
+                    "Dark": "Dark",
+                    "Light": "Light",
+                    "Restore Defaults": "Restore Defaults",
+                    "Apply": "Apply",
+                    "Cancel": "Cancel"
+                }
+        
+        self.window = self._create_window(self.enable_updates, self.theme, content)
 
-    def _create_window(self, enable_updates: bool, theme: str):
+    def _create_window(self, enable_updates: bool, theme: str, content: dict) -> sg.Window:
         layout = [
-            [sg.Text("CRT Settings", font=("Helvetica", 24))],
-            [sg.Push(), sg.Checkbox("Automatically Check for Updates", default=enable_updates, key="enable_updates")],
-            [sg.Push(), sg.Text("Theme", font=("Helvetica", 16)), sg.Combo(["Automatic", "Dark", "Light"], key="theme", default_value=theme)],
+            [sg.Text(content["CRT Settings"], font=("Helvetica", 24))],
+            [sg.Push(), sg.Checkbox(content["Automatically Check for Updates"], default=enable_updates, key="enable_updates")],
+            [sg.Push(), sg.Text(content["Theme"], font=("Helvetica", 16)), sg.Combo([content["Automatic"], content["Dark"], content["Light"]], key="theme", default_value=theme)],
             [sg.HorizontalSeparator()],
-            [sg.Button("Restore Defaults"), sg.Button("Apply"), sg.Button("Cancel")],
+            [sg.Button(content["Restore Defaults"]), sg.Button(content["Apply"]), sg.Button(content["Cancel"])],
         ]
         return sg.Window("CRT Settings", layout, icon="icon.ico")
     
