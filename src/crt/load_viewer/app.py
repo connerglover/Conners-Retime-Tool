@@ -76,3 +76,4 @@ class LoadViewer:
         self._cleanup()
         
         return self.time
+    

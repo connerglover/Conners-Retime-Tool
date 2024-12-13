@@ -52,3 +52,4 @@ class SaveAsGUI:
         Exits the save as GUI.
         """
         self.close()
+        

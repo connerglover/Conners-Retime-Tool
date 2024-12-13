@@ -1,6 +1,7 @@
 import PySimpleGUI as sg
 import json
 import re
+import darkdetect
 
 from webbrowser import open as open_url
 from requests import get as get_url
@@ -12,6 +13,7 @@ from crt.load import Load
 from crt.gui import MainWindow
 from crt.load_viewer.app import LoadViewer
 from crt.save_as.app import SaveAs
+from crt.settings.app import SettingsApp
 
 class App:
     """
@@ -24,7 +26,23 @@ class App:
         self.time = Time()
         self.file_path = None
         
-        sg.theme("DarkGrey15")
+        self.settings = SettingsApp()
+        self.settings_dict = self.settings.config_to_dict()
+        
+        match self.settings_dict["theme"]:
+            case "Automatic":
+                if darkdetect.isDark():
+                    sg.theme("DarkGrey15")
+                else:
+                    sg.theme("LightGray1")
+            case "Dark":
+                sg.theme("DarkGrey15")
+            case "Light":
+                sg.theme("LightGray1")
+        
+        if self.settings_dict["enable_updates"]:
+            self._check_for_updates()
+        
         self.main_window = MainWindow()
         
     def _check_for_updates(self):
@@ -349,7 +367,6 @@ class App:
         """
         Runs the application.
         """
-        self._check_for_updates()
         
         while True:
             event, values = self.main_window.read()
@@ -368,7 +385,7 @@ class App:
                     self._save_as_time()
                 
                 case "Settings":
-                    self._settings()
+                    self.settings.open_window()
                 
                 case "Exit":
                     break
@@ -439,7 +456,7 @@ class App:
             self.main_window.window["without_loads_display"].update(self.time.iso_format(True))
             self.main_window.window["loads_display"].update(self.time.iso_format(False))
         
-        if sg.popup_yes_no("Exit", "Would you like to save?") == "Yes":
+        if self.file_path and sg.popup_yes_no("Exit", "Would you like to save?") == "Yes":
             self._save_time()
         
         self.main_window.close()

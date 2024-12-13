@@ -17,7 +17,7 @@ class MainWindow:
         Returns:
             sg.Window: The main window.
         """
-        menu = [["File", ["New Time", "---", "Open Time", "---", "Save", "Save As", "---", "Exit"]], 
+        menu = [["File", ["New Time", "---", "Open Time", "---", "Save", "Save As", "---", "Settings", "---", "Exit"]], 
                 ["Edit", ["Copy Mod Note", "Clear Loads", "---", "Add Loads", "Edit Loads"]], 
                 ["Help", ["Check for Updates", "---", "Report Issue", "Suggest Feature", "---", "About"]]]
         

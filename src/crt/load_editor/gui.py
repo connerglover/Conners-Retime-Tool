@@ -73,3 +73,4 @@ class LoadEditorGUI:
         Exits the load editor GUI.
         """
         self.close()
+        

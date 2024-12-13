@@ -113,3 +113,4 @@ class LoadEditor:
         
         self.window.close()
         return self.load
+    
