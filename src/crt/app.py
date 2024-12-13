@@ -43,7 +43,7 @@ class App:
         if self.settings_dict["enable_updates"]:
             self._check_for_updates()
         
-        self.main_window = MainWindow()
+        self.window = MainWindow()
         
     def _check_for_updates(self):
         """
@@ -69,7 +69,7 @@ class App:
             except ValueError as e:
                 self._show_error(e)
             finally:
-                self.main_window.window["loads_display"].update(self.time.iso_format(True))
+                self.window.window["loads_display"].update(self.time.iso_format(True))
         else:
             self._show_error("No loads to edit.")
     
@@ -88,8 +88,8 @@ class App:
         except ValueError as e:
             self._show_error(e)
         else:
-            self.main_window.window["start_loads"].update("0")
-            self.main_window.window["end_loads"].update("0")
+            self.window.window["start_loads"].update("0")
+            self.window.window["end_loads"].update("0")
             sg.popup("Loads", "Load added successfully.")
     
     def debug_info_to_frame(self, time: Time, debug_info: str) -> int:
@@ -130,7 +130,7 @@ class App:
         framerate = values["framerate"]
         framerate = self._clean_framerate(framerate)
         
-        self.main_window.window["framerate"].update(framerate)
+        self.window.window["framerate"].update(framerate)
         self.time.mutate(framerate=framerate)
     
     def _handle_time(self, values: dict, key: str):
@@ -165,7 +165,7 @@ class App:
             self._show_error(e)
             time_frame = self.time.start_frame
         
-        self.main_window.window[key].update(time_frame)
+        self.window.window[key].update(time_frame)
     
     def _handle_loads(self, values: dict, key: str):
         """
@@ -185,7 +185,7 @@ class App:
         else:
             loads = self.clean_frame(loads)
         
-        self.main_window.window[key].update(loads)
+        self.window.window[key].update(loads)
     
     def _clean_framerate(self,framerate: str) -> d:
         cleaned_framerate = re.sub(r'[^0-9.]', '', framerate)
@@ -231,7 +231,7 @@ class App:
         framerate = sg.clipboard_get()
         framerate = self._clean_framerate(framerate)
         
-        self.main_window.window["framerate"].update(framerate)
+        self.window.window["framerate"].update(framerate)
         self.time.mutate(framerate=framerate)
     
     def _paste_time(self, values: dict, key: str):
@@ -269,7 +269,7 @@ class App:
             self._show_error(e)
             time_frame = self.time.start_frame
         
-        self.main_window.window[key].update(time_frame)
+        self.window.window[key].update(time_frame)
     
     def _paste_loads(self, values: dict, key: str):
         """
@@ -289,7 +289,7 @@ class App:
         else:
             loads = self.clean_frame(loads)
         
-        self.main_window.window[key].update(loads)
+        self.window.window[key].update(loads)
     
     def _new_time(self):
         """
@@ -297,11 +297,11 @@ class App:
         """
         self.time = Time()
         
-        self.main_window.window["framerate"].update(self.time.framerate)
-        self.main_window.window["start"].update(self.time.start_frame)
-        self.main_window.window["end"].update(self.time.end_frame)
-        self.main_window.window["start_loads"].update("0")
-        self.main_window.window["end_loads"].update("0")
+        self.window.window["framerate"].update(self.time.framerate)
+        self.window.window["start"].update(self.time.start_frame)
+        self.window.window["end"].update(self.time.end_frame)
+        self.window.window["start_loads"].update("0")
+        self.window.window["end_loads"].update("0")
     
     def _convert_to_dict(self) -> dict:
         """
@@ -334,13 +334,13 @@ class App:
                 self.time.mutate(start_frame=file_data["start_frame"], end_frame=file_data["end_frame"], framerate=file_data["framerate"])
                 self.time.loads = loads
                 
-                self.main_window.window["start"].update(self.time.start_frame)
-                self.main_window.window["end"].update(self.time.end_frame)
-                self.main_window.window["framerate"].update(self.time.framerate)
-                self.main_window.window["start_loads"].update("0")
-                self.main_window.window["end_loads"].update("0")
-                self.main_window.window["loads_display"].update(self.time.iso_format(False))
-                self.main_window.window["without_loads_display"].update(self.time.iso_format(True))
+                self.window.window["start"].update(self.time.start_frame)
+                self.window.window["end"].update(self.time.end_frame)
+                self.window.window["framerate"].update(self.time.framerate)
+                self.window.window["start_loads"].update("0")
+                self.window.window["end_loads"].update("0")
+                self.window.window["loads_display"].update(self.time.iso_format(False))
+                self.window.window["without_loads_display"].update(self.time.iso_format(True))
             
     def _save_time(self):
         """
@@ -353,6 +353,17 @@ class App:
             sg.popup("Save", "Time saved successfully.")
         else:
             self._save_as_time()
+    
+    def _settings(self):
+        """
+        Opens the settings.
+        """
+        self.settings.open_window()
+        old_theme = self.settings_dict["theme"]
+        self.settings_dict = self.settings.config_to_dict()
+        
+        if self.settings_dict["theme"] != old_theme:
+            sg.popup_ok("Settings", "Please restart the application to apply the changes.")
     
     def _save_as_time(self):
         """
@@ -369,7 +380,7 @@ class App:
         """
         
         while True:
-            event, values = self.main_window.read()
+            event, values = self.window.read()
 
             match event:
                 case "New Time":
@@ -385,7 +396,7 @@ class App:
                     self._save_as_time()
                 
                 case "Settings":
-                    self.settings.open_window()
+                    self._settings()
                 
                 case "Exit":
                     break
@@ -453,13 +464,13 @@ class App:
                 case sg.WIN_CLOSED:
                     break
             
-            self.main_window.window["without_loads_display"].update(self.time.iso_format(True))
-            self.main_window.window["loads_display"].update(self.time.iso_format(False))
+            self.window.window["without_loads_display"].update(self.time.iso_format(True))
+            self.window.window["loads_display"].update(self.time.iso_format(False))
         
         if self.file_path and sg.popup_yes_no("Exit", "Would you like to save?") == "Yes":
             self._save_time()
         
-        self.main_window.close()
+        self.window.close()
 
     def _show_error(self, message):
         """
