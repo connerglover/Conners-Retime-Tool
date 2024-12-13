@@ -1,15 +1,20 @@
 from crt.settings.gui import SettingsGUI
 
 from configparser import ConfigParser
-
 import os
+import appdirs
+
 import PySimpleGUI as sg
 
 class SettingsApp:
     def __init__(self):
         self.config = ConfigParser()
         
-        self.file_path = os.path.join(os.getenv('APPDATA'), "CRT", "settings.ini")
+        self.file_path = os.path.join(appdirs.user_config_dir("CRT"), "settings.ini")
+        self.defaults = {
+            "enable_updates": "True",
+            "theme": "Automatic",
+        }
         
         os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
         
@@ -19,12 +24,13 @@ class SettingsApp:
             self.config.read(self.file_path)
         
         self._settings_cache = None
+        self._sync_missing_settings()
 
     def _restore_defaults(self):
         self.config.add_section("Settings")
+        for key, value in self.defaults.items():
+            self.config.set("Settings", key, value)
         with open(self.file_path, "w") as file:
-            self.config.set("Settings", "enable_updates", "True")
-            self.config.set("Settings", "theme", "Automatic")
             self.config.write(file)
         self._settings_cache = None
 
@@ -43,10 +49,26 @@ class SettingsApp:
             }
         return self._settings_cache
     
+    def _sync_missing_settings(self):
+        """Ensure all default settings are present in the config file."""
+        if not self.config.has_section("Settings"):
+            self.config.add_section("Settings")
+        
+        updated = False
+        for key, value in self.defaults.items():
+            if not self.config.has_option("Settings", key):
+                self.config.set("Settings", key, value)
+                updated = True
+        
+        if updated:
+            with open(self.file_path, "w") as file:
+                self.config.write(file)
+            self._settings_cache = None
+    
     def open_window(self):
         settings = self.config_to_dict()
         
-        self.window = SettingsGUI(settings["enable_updates"], settings["theme"])
+        self.window = SettingsGUI(settings)
         
         while True:
             event, values = self.window.read()

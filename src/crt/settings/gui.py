@@ -4,8 +4,10 @@ import re
 from decimal import Decimal as d
 
 class SettingsGUI:
-    def __init__(self, enable_updates: bool, theme: str):
-        self.window = self._create_window(enable_updates, theme)
+    def __init__(self, settings: dict):
+        self.enable_updates = settings["enable_updates"]
+        self.theme = settings["theme"]
+        self.window = self._create_window(self.enable_updates, self.theme)
 
     def _create_window(self, enable_updates: bool, theme: str):
         layout = [
