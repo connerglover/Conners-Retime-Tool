@@ -2,8 +2,11 @@ import PySimpleGUI as sg
 import json
 import re
 
+from webbrowser import open as open_url
+from requests import get as get_url
 from decimal import Decimal as d
 
+from crt._version import __version__
 from crt.time import Time
 from crt.gui import MainWindow
 from crt.load_viewer.app import LoadViewer
@@ -20,6 +23,19 @@ class App:
         
         sg.theme("DarkGrey15")
         self.main_window = MainWindow()
+        
+    def _check_for_updates(self):
+        """
+        Checks for updates.
+        """
+        response = get_url("https://api.github.com/repos/connerglover/Conners-Retime-Tool/releases/latest")
+        if response.status_code == 200:
+            latest_release = response.json()
+            latest_version = latest_release["tag_name"]
+            if str(latest_version) != str(__version__):
+                confirmation = sg.popup_yes_no("Update Available", f"A new version of CRT is available: {latest_version}. Would you like to update?")
+                if confirmation == "Yes":
+                    open_url("https://github.com/connerglover/Conners-Retime-Tool/releases/latest")
     
     def _edit_loads(self):
         """
@@ -255,6 +271,8 @@ class App:
         """
         Runs the application.
         """
+        self._check_for_updates()
+        
         while True:
             event, values = self.main_window.read()
             
