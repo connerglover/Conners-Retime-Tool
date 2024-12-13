@@ -25,7 +25,30 @@ class Time:
         self.end_frame = end_frame
         self.framerate = framerate
         self.precision = precision
+        self._cache = {
+            'length_loads': None,
+            'avg_load_length': None,
+            'total_load_length': None
+        }
+        self._cache_dirty = True
+        self._format_cache = {
+            'src': {'with_loads': None, 'without_loads': None},
+            'iso': {'with_loads': None, 'without_loads': None}
+        }
+        self._format_cache_dirty = True
         
+    def _update_cache(self):
+        if self._cache_dirty:
+            total_load_length = sum(load.length for load in self.loads)
+            self._cache['total_load_length'] = total_load_length
+            self._cache['length_loads'] = self.length - total_load_length
+            self._cache['avg_load_length'] = total_load_length // len(self.loads) if self.loads else 0
+            self._cache_dirty = False
+
+    def _invalidate_caches(self):
+        self._cache_dirty = True
+        self._format_cache_dirty = True
+
     @property
     def length(self) -> int:
         """The total length in frames."""
@@ -34,7 +57,14 @@ class Time:
     @property
     def length_loads(self) -> int:
         """The length in frames excluding loads."""
-        return int(self.length - sum(load.length for load in self.loads))
+        self._update_cache()
+        return self._cache['length_loads']
+    
+    @property
+    def average_load_length(self) -> int:
+        """The average length of the loads."""
+        self._update_cache()
+        return self._cache['avg_load_length']
     
     @property
     def time(self) -> d:
@@ -63,6 +93,7 @@ class Time:
         Clears the loads.
         """
         self.loads = []
+        self._invalidate_caches()
         
         return
     
@@ -78,6 +109,7 @@ class Time:
         self.start_frame = start_frame if start_frame is not None else self.start_frame
         self.end_frame = end_frame if end_frame is not None else self.end_frame
         self.framerate = framerate if framerate is not None else self.framerate
+        self._invalidate_caches()
         
         return
     
@@ -103,6 +135,7 @@ class Time:
             index (int): The index of the load.
         """
         del self.loads[index]
+        self._invalidate_caches()
         
         return
     
@@ -122,7 +155,8 @@ class Time:
             self.loads[index].start_frame = start_frame
         if end_frame is not None:
             self.loads[index].end_frame = end_frame
-            
+        self._invalidate_caches()
+        
         return
     
     def add_load(self, start_frame: int, end_frame: int) -> None:
@@ -144,6 +178,7 @@ class Time:
         
         load = Load(start_frame, end_frame)
         self.loads.append(load)
+        self._invalidate_caches()
         
         return
 
@@ -184,8 +219,11 @@ class Time:
         Returns:
             str: The formatted time.
         """
-        hours, minutes, seconds, ms = self._format_time_components(self.time_loads if loads else self.time)
-        return f"{hours}h {minutes}m {seconds}s {ms}ms"
+        if self._format_cache_dirty or self._format_cache['src']['with_loads' if loads else 'without_loads'] is None:
+            hours, minutes, seconds, ms = self._format_time_components(self.time_loads if loads else self.time)
+            formatted = f"{hours}h {minutes}m {seconds}s {ms}ms"
+            self._format_cache['src']['with_loads' if loads else 'without_loads'] = formatted
+        return self._format_cache['src']['with_loads' if loads else 'without_loads']
     
     def iso_format(self, loads: bool = False) -> str:
         """

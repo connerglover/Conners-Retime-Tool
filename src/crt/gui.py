@@ -7,6 +7,9 @@ class MainWindow:
     def __init__(self):
         """
         Initializes the MainWindow class.
+        
+        Args:
+            language (str): The language of the window.
         """
         self.window = self._create_window()
     

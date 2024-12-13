@@ -62,15 +62,18 @@ class LoadViewer:
         while True:
             event, values = self.window.read()
             
-            for load_index, load in enumerate(self.time.loads):
-                if event == f"edit_{load_index}":
-                    self._edit_load(load_index)
-                
-                elif event == f"delete_{load_index}":
-                    self._delete_load(load_index)
-            
             if event == sg.WIN_CLOSED:
                 break
+            
+            # Extract load index from event name if it exists
+            if '_' in str(event):
+                action, load_index = event.split('_')
+                load_index = int(load_index)
+                
+                if action == "edit":
+                    self._edit_load(load_index)
+                elif action == "delete":
+                    self._delete_load(load_index)
             
         self.window.close()
         self._cleanup()

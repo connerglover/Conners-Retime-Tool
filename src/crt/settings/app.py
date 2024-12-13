@@ -17,23 +17,31 @@ class SettingsApp:
             self._restore_defaults()
         else:
             self.config.read(self.file_path)
+        
+        self._settings_cache = None
 
     def _restore_defaults(self):
+        self.config.add_section("Settings")
         with open(self.file_path, "w") as file:
             self.config.set("Settings", "enable_updates", "True")
             self.config.set("Settings", "theme", "Automatic")
             self.config.write(file)
+        self._settings_cache = None
 
     def _apply(self, values):
-        self.config.set("Settings", "enable_updates", str(values["enable_updates"]))
-        self.config.set("Settings", "theme", str(values["theme"]))
-        self.config.write(open(self.file_path, "w"))
+        with open(self.file_path, "w") as file:
+            self.config.set("Settings", "enable_updates", str(values["enable_updates"]))
+            self.config.set("Settings", "theme", str(values["theme"]))
+            self.config.write(file)
+        self._settings_cache = None
     
     def config_to_dict(self):
-        return {
-            "enable_updates": self.config.getboolean("Settings", "enable_updates"),
-            "theme": self.config.get("Settings", "theme"),
-        }
+        if self._settings_cache is None:
+            self._settings_cache = {
+                "enable_updates": self.config.getboolean("Settings", "enable_updates"),
+                "theme": self.config.get("Settings", "theme"),
+            }
+        return self._settings_cache
     
     def open_window(self):
         settings = self.config_to_dict()

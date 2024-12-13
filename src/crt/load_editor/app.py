@@ -80,12 +80,8 @@ class LoadEditor:
         Returns:
             int: The cleaned frame.
         """
-        if any(char.isdigit() for char in frame):
-            cleaned_frame = int(re.sub(r"[^0-9]", "", frame))
-        else:
-            cleaned_frame = 0
-        
-        return cleaned_frame
+        digits = ''.join(char for char in frame if char.isdigit())
+        return int(digits) if digits else 0
     
     def run(self):
         """

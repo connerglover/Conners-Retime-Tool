@@ -18,11 +18,7 @@ class SaveAs:
                     file_path = values["file_name"]
                     break
                 
-                case "cancel":
-                    file_path = None
-                    break
-                
-                case sg.WIN_CLOSED:
+                case "cancel" | sg.WIN_CLOSED:
                     file_path = None
                     break
         

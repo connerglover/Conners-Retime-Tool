@@ -45,6 +45,12 @@ class App:
         
         self.window = MainWindow()
         
+        self._cached_iso_formats = {
+            'with_loads': None,
+            'without_loads': None
+        }
+        self._cache_dirty = True
+        
     def _check_for_updates(self):
         """
         Checks for updates.
@@ -83,6 +89,15 @@ class App:
         start_frame = int(values["start_loads"])
         end_frame = int(values["end_loads"])
         
+        if self.time.loads:
+            if self._load_stats['total_loads'] != len(self.time.loads):
+                self._load_stats['avg_length'] = sum(load.end_frame - load.start_frame for load in self.time.loads) / len(self.time.loads)
+                self._load_stats['total_loads'] = len(self.time.loads)
+            
+            if (end_frame - start_frame) > self._load_stats['avg_length'] * 10:
+                if sg.popup_yes_no("Woah!", "This load is concerningly long. Would you like to add the load anyway?") == "No":
+                    return
+        
         try:
             self.time.add_load(start_frame, end_frame)
         except ValueError as e:
@@ -93,32 +108,23 @@ class App:
             sg.popup("Loads", "Load added successfully.")
     
     def debug_info_to_frame(self, time: Time, debug_info: str) -> int:
-        """
-        Converts debug info to a frame.
-        
-        Args:
-            time (Time): The time.
-            debug_info (str): The debug info.
-        
-        Returns:
-            int: The frame.
-        """
-        debug_info = "{" + debug_info.split("{", 1)[-1]
-        
+        """Optimized debug info parsing"""
         try:
+            # Find the starting position of the JSON object more efficiently
+            start_pos = debug_info.find('{')
+            if start_pos == -1:
+                raise ValueError("The debug info provided is invalid.\nPlease re-enter debug info.")
+            
+            debug_info = debug_info[start_pos:]
             parsed_debug_info = json.loads(debug_info)
-        except json.decoder.JSONDecodeError:
-            raise ValueError("The debug info provided is invalid.\nPlease re-enter debug info.")
-        
-        try:
             cmt = parsed_debug_info["cmt"]
-        except KeyError:
+            
+            # Optimize decimal calculations
+            output = int(round(d(cmt) * d(time.framerate), 0))
+            return output
+        
+        except (json.decoder.JSONDecodeError, KeyError):
             raise ValueError("The debug info provided is invalid.\nPlease re-enter debug info.")
-        
-        output = d(cmt) * d(time.framerate)
-        output = int(round(output, 0))
-        
-        return output
 
     def _handle_framerate(self, values: dict):
         """
@@ -166,6 +172,7 @@ class App:
             time_frame = self.time.start_frame
         
         self.window.window[key].update(time_frame)
+        self._cache_dirty = True
     
     def _handle_loads(self, values: dict, key: str):
         """
@@ -205,21 +212,17 @@ class App:
         return cleaned_framerate
 
     def clean_frame(self, frame: str) -> int:
-        """
-        Cleans the frame.
+        """Optimized frame cleaning"""
+        # Use a more efficient method to check for digits
+        if not frame or frame.isspace():
+            return 0
         
-        Args:
-            frame (str): The frame.
+        # Compile regex pattern once
+        if not hasattr(self, '_digit_pattern'):
+            self._digit_pattern = re.compile(r'\d+')
         
-        Returns:
-            int: The cleaned frame.
-        """
-        if any(char.isdigit() for char in frame):
-            cleaned_frame = int(re.sub(r"[^0-9]", "", frame))
-        else:
-            cleaned_frame = 0
-        
-        return cleaned_frame
+        match = self._digit_pattern.search(frame)
+        return int(match.group()) if match else 0
     
     def _paste_framerate(self, values: dict):
         """
@@ -296,12 +299,14 @@ class App:
         Creates a new time.
         """
         self.time = Time()
-        
-        self.window.window["framerate"].update(self.time.framerate)
-        self.window.window["start"].update(self.time.start_frame)
-        self.window.window["end"].update(self.time.end_frame)
-        self.window.window["start_loads"].update("0")
-        self.window.window["end_loads"].update("0")
+        self._update_window_values({
+            "framerate": self.time.framerate,
+            "start": self.time.start_frame,
+            "end": self.time.end_frame,
+            "start_loads": "0",
+            "end_loads": "0"
+        })
+        self._cache_dirty = True
     
     def _convert_to_dict(self) -> dict:
         """
@@ -464,8 +469,7 @@ class App:
                 case sg.WIN_CLOSED:
                     break
             
-            self.window.window["without_loads_display"].update(self.time.iso_format(True))
-            self.window.window["loads_display"].update(self.time.iso_format(False))
+            self._update_displays()
         
         if self.file_path and sg.popup_yes_no("Exit", "Would you like to save?") == "Yes":
             self._save_time()
@@ -480,3 +484,18 @@ class App:
             message (str): The message to show.
         """
         sg.popup_error("Error", message, title="Error")
+
+    def _update_displays(self):
+        """Update time displays with caching"""
+        if self._cache_dirty:
+            self._cached_iso_formats['with_loads'] = self.time.iso_format(False)
+            self._cached_iso_formats['without_loads'] = self.time.iso_format(True)
+            self._cache_dirty = False
+            
+        self.window.window["without_loads_display"].update(self._cached_iso_formats['without_loads'])
+        self.window.window["loads_display"].update(self._cached_iso_formats['with_loads'])
+
+    def _update_window_values(self, updates: dict):
+        """Batch window updates for better performance"""
+        for key, value in updates.items():
+            self.window.window[key].update(value)
