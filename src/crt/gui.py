@@ -17,7 +17,12 @@ class MainWindow:
         Returns:
             sg.Window: The main window.
         """
+        menu = [["File", ["New Time", "---", "Open Time", "---", "Save", "Save As", "---", "Exit"]], 
+                ["Edit", ["Copy Mod Note", "Clear Loads", "---", "Add Loads", "Edit Loads"]], 
+                ["Help", ["Check for Updates", "---", "Report Issue", "Suggest Feature", "---", "About"]]]
+        
         layout = [
+            [sg.Menu(menu)],
             [sg.Push(), sg.Text("Framerate (FPS)", font=("Helvetica", 16), justification="right"), sg.Input(default_text="60", key="framerate", enable_events=True, font=("Helvetica", 16), pad=((5, 0), (0, 0)), size=(12, 1)), sg.Button("Paste", font=("Helvetica", 10), key="framerate_paste")],
             [sg.Push(), sg.Text("Start Frame", font=("Helvetica", 16), justification="right"), sg.Input(default_text="0", key="start", enable_events=True, font=("Helvetica", 16), pad=((5, 0), (0, 0)), size=(12, 1)), sg.Button("Paste", font=("Helvetica", 10), key="start_paste")],
             [sg.Push(), sg.Text("End Frame", font=("Helvetica", 16), justification="right"), sg.Input(default_text="0", key="end", enable_events=True, font=("Helvetica", 16), pad=((5, 0), (0, 0)), size=(12, 1)), sg.Button("Paste", font=("Helvetica", 10), key="end_paste")],

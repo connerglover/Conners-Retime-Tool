@@ -58,6 +58,14 @@ class Time:
             return f"{base_note}{self.src_format(True)} without loads, and {self.src_format()} with loads at {self.framerate} FPS using {self.GITHUB_LINK}"
         return f"{base_note}{self.src_format()} at {self.framerate} FPS using {self.GITHUB_LINK}"
     
+    def clear_loads(self) -> None:
+        """
+        Clears the loads.
+        """
+        self.loads = []
+        
+        return
+    
     def mutate(self, start_frame: int = None, end_frame: int = None, framerate: d = None) -> None:
         """
         Mutates the time.

@@ -8,8 +8,10 @@ from decimal import Decimal as d
 
 from crt._version import __version__
 from crt.time import Time
+from crt.load import Load
 from crt.gui import MainWindow
 from crt.load_viewer.app import LoadViewer
+from crt.save_as.app import SaveAs
 
 class App:
     """
@@ -20,6 +22,7 @@ class App:
         Initializes the App class.
         """
         self.time = Time()
+        self.file_path = None
         
         sg.theme("DarkGrey15")
         self.main_window = MainWindow()
@@ -41,13 +44,16 @@ class App:
         """
         Edits the loads.
         """
-        try:
-            load_window = LoadViewer(self.time)
-            load_window.run()
-        except ValueError as e:
-            self._show_error(e)
-        finally:
-            self.main_window.window["loads_display"].update(self.time.iso_format(True))
+        if self.time.loads:
+            try:
+                load_window = LoadViewer(self.time)
+                load_window.run()
+            except ValueError as e:
+                self._show_error(e)
+            finally:
+                self.main_window.window["loads_display"].update(self.time.iso_format(True))
+        else:
+            self._show_error("No loads to edit.")
     
     def _add_loads(self, values):
         """
@@ -266,7 +272,79 @@ class App:
             loads = self.clean_frame(loads)
         
         self.main_window.window[key].update(loads)
+    
+    def _new_time(self):
+        """
+        Creates a new time.
+        """
+        self.time = Time()
         
+        self.main_window.window["framerate"].update(self.time.framerate)
+        self.main_window.window["start"].update(self.time.start_frame)
+        self.main_window.window["end"].update(self.time.end_frame)
+        self.main_window.window["start_loads"].update("0")
+        self.main_window.window["end_loads"].update("0")
+    
+    def _convert_to_dict(self) -> dict:
+        """
+        Converts the time to a JSON dictionary.
+        
+        Returns:
+            dict: The JSON dictionary.
+        """
+        return {
+            "start_frame": self.time.start_frame,
+            "end_frame": self.time.end_frame,
+            "framerate": self.time.framerate,
+            "loads": [(load.start_frame, load.end_frame) for load in self.time.loads]
+        }
+    
+    def _open_time(self):
+        """
+        Opens a time.
+        """
+        self.file_path = sg.popup_get_file("Open Time", file_types=(("Time Files", "*.json"),))
+        if self.file_path:
+            with open(self.file_path, "r") as file:
+                try:
+                    file_data = json.load(file)
+                except json.decoder.JSONDecodeError:
+                    self._show_error("The file provided is corrupted.\nPlease re-enter debug info.")
+                    return
+                
+                loads = [Load(load[0], load[1]) for load in file_data["loads"]]
+                self.time.mutate(start_frame=file_data["start_frame"], end_frame=file_data["end_frame"], framerate=file_data["framerate"])
+                self.time.loads = loads
+                
+                self.main_window.window["start"].update(self.time.start_frame)
+                self.main_window.window["end"].update(self.time.end_frame)
+                self.main_window.window["framerate"].update(self.time.framerate)
+                self.main_window.window["start_loads"].update("0")
+                self.main_window.window["end_loads"].update("0")
+                self.main_window.window["loads_display"].update(self.time.iso_format(False))
+                self.main_window.window["without_loads_display"].update(self.time.iso_format(True))
+            
+    def _save_time(self):
+        """
+        Saves the time.
+        """
+        
+        if self.file_path:
+            with open(self.file_path, "w") as file:
+                json.dump(self._convert_to_dict(), file)
+            sg.popup("Save", "Time saved successfully.")
+        else:
+            self._save_as_time()
+    
+    def _save_as_time(self):
+        """
+        Saves the time as a new time.
+        """
+        self.file_path = SaveAs().run()
+        if self.file_path:
+            with open(self.file_path, "w") as file:
+                json.dump(self._convert_to_dict(), file)
+    
     def run(self):
         """
         Runs the application.
@@ -275,8 +353,41 @@ class App:
         
         while True:
             event, values = self.main_window.read()
-            
+
             match event:
+                case "New Time":
+                    self._new_time()
+                
+                case "Open Time":
+                    self._open_time()
+                
+                case "Save":
+                    self._save_time()
+                
+                case "Save As":
+                    self._save_as_time()
+                
+                case "Settings":
+                    self._settings()
+                
+                case "Exit":
+                    break
+                
+                case "Clear Loads":
+                    self.time.clear_loads()
+                
+                case "Check for Updates":
+                    self._check_for_updates()
+                    
+                case "Report Issue":
+                    open_url("https://forms.gle/mnmbgt6cBeL6Dykk6")
+                
+                case "Suggest Feature":
+                    open_url("https://forms.gle/V5bPaQbcFsk6Cijr5")
+                
+                case "About":
+                    sg.popup("About", f"Conner's Retime Tool v{__version__}\n\nCreated by Conner Glover\n\n© 2024 Conner Glover")
+                
                 case "Edit Loads":
                     self._edit_loads()
                 
@@ -327,6 +438,9 @@ class App:
             
             self.main_window.window["without_loads_display"].update(self.time.iso_format(True))
             self.main_window.window["loads_display"].update(self.time.iso_format(False))
+        
+        if sg.popup_yes_no("Exit", "Would you like to save?") == "Yes":
+            self._save_time()
         
         self.main_window.close()
 

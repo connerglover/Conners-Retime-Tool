@@ -45,6 +45,16 @@ class LoadViewer:
         self.loads_to_delete.append(load_index)
         self.window.window[f"load_{load_index}"].update(visible=False)
 
+
+    def _cleanup(self):
+        """
+        Cleans up the load viewer.
+        """
+        self.loads_to_delete.sort(reverse=True)
+        
+        for index in self.loads_to_delete:
+            del self.time.loads[index]
+
     def run(self):
         """
         Runs the load viewer.
@@ -66,14 +76,3 @@ class LoadViewer:
         self._cleanup()
         
         return self.time
-
-    def _cleanup(self):
-        """
-        Cleans up the load viewer.
-        """
-        self.loads_to_delete.sort(reverse=True)
-        
-        for index in self.loads_to_delete:
-            del self.time.loads[index]
-        
-        self.time.recalculate()
