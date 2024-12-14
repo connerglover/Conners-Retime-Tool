@@ -6,12 +6,13 @@ from decimal import Decimal as d
 
 from crt.load import Load
 from crt.load_editor.gui import LoadEditorGUI
+from crt.language import Language
 
 class LoadEditor:
     """
     Load editor for CRT.
     """
-    def __init__(self, load: Load, framerate: d):
+    def __init__(self, load: Load, framerate: d, language: Language):
         """
         Initializes the LoadEditor class.
         
@@ -21,7 +22,7 @@ class LoadEditor:
         """
         self.load = load
         self.framerate = framerate
-        self.window = LoadEditorGUI(load, framerate)
+        self.window = LoadEditorGUI(load, framerate, language.content)
     
     def _handle_frame_input(self, values: dict, key: str):
         """

@@ -5,18 +5,10 @@ class SaveAsGUI:
     """
     Save CRT as a time file GUI for CRT.
     """
-    def __init__(self, language: str = "en"):
+    def __init__(self, content: dict):
         """
         Initializes the SaveAsGUI class.
         """
-        match language:
-            case "en":
-                content = {
-                    "Save As": "Save As",
-                    "File Name": "File Name",
-                    "Save": "Save",
-                    "Cancel": "Cancel"
-                }
         
         self.window = self._create_window(content)
 
@@ -30,7 +22,7 @@ class SaveAsGUI:
         """
         layout = [
             [sg.Text(content["Save As"], font=("Helvetica", 24))],
-            [sg.Text(content["File Name"], font=("Helvetica", 14)), sg.SaveAs(key="file_name", file_types=(("Load Files", "*.json"),))],
+            [sg.Text(content["File Name"], font=("Helvetica", 14), key = "File Name"), sg.SaveAs(key="file_name", file_types=(("Load Files", "*.json"),))],
             [sg.Button(content["Save"], font=("Helvetica", 14), key="save"), sg.Button(content["Cancel"], font=("Helvetica", 14), key="cancel")]
         ]
 

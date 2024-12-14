@@ -1,13 +1,15 @@
 import PySimpleGUI as sg
 
 from crt.save_as.gui import SaveAsGUI
+from crt.language import Language
 
 class SaveAs:
     """
     Save CRT as a time file.
     """
-    def __init__(self):
-        self.window = SaveAsGUI()
+    def __init__(self, language: Language):
+        
+        self.window = SaveAsGUI(language.content)
     
     def run(self):
         while True:

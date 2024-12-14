@@ -7,21 +7,13 @@ class LoadViewerGUI:
     """
     Load viewer GUI for CRT.
     """
-    def __init__(self, time: Time, language: str = "en"):
+    def __init__(self, time: Time, content: dict):
         """
         Initializes the LoadViewerGUI class.
         
         Args:
             time (Time): The time.
         """
-        
-        match language:
-            case "en":
-                content = {
-                    "Loads": "Loads",
-                    "Edit": "Edit",
-                    "Delete": "Delete"
-                }
         
         self.window = self._create_window(time, content)
     

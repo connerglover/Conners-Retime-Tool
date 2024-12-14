@@ -2,7 +2,7 @@
 Settings for CRT.
 """
 
-from crt.settings.app import SettingsApp
+from crt.app_settings.app import SettingsApp
 
 __name__ = "crt.settings"
 __author__ = "Conner Glover"

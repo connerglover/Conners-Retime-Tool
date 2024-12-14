@@ -13,7 +13,7 @@ from crt.load import Load
 from crt.gui import MainWindow
 from crt.load_viewer.app import LoadViewer
 from crt.save_as.app import SaveAs
-from crt.settings.app import SettingsApp
+from crt.app_settings.app import SettingsApp
 
 class App:
     """
@@ -42,8 +42,10 @@ class App:
         
         if self.settings_dict["enable_updates"]:
             self._check_for_updates()
+            
+        self.language = self.settings.language
         
-        self.window = MainWindow()
+        self.window = MainWindow(self.language.content)
         
         self._cached_iso_formats = {
             'with_loads': None,
@@ -70,7 +72,7 @@ class App:
         """
         if self.time.loads:
             try:
-                load_window = LoadViewer(self.time)
+                load_window = LoadViewer(self.time, self.language)
                 load_window.run()
             except ValueError as e:
                 self._show_error(e)
@@ -374,7 +376,7 @@ class App:
         """
         Saves the time as a new time.
         """
-        self.file_path = SaveAs().run()
+        self.file_path = SaveAs(self.language).run()
         if self.file_path:
             with open(self.file_path, "w") as file:
                 json.dump(self._convert_to_dict(), file)
@@ -387,7 +389,7 @@ class App:
         while True:
             event, values = self.window.read()
 
-            match event:
+            match (event.split("::")[-1] if (isinstance(event, str) and "::" in event) else event):
                 case "New Time":
                     self._new_time()
                 
@@ -419,7 +421,7 @@ class App:
                     open_url("https://forms.gle/V5bPaQbcFsk6Cijr5")
                 
                 case "About":
-                    sg.popup("About", f"Conner's Retime Tool v{__version__}\n\nCreated by Conner Glover\n\n© 2024 Conner Glover")
+                    sg.popup("About", f"Conner's Retime Tool v{__version__}\n\nCreated by Conner Glover\n\nCredits:\nMenzo: French and Polish Translations\n© 2024 Conner Glover")
                 
                 case "Edit Loads":
                     self._edit_loads()
@@ -468,6 +470,9 @@ class App:
                 
                 case sg.WIN_CLOSED:
                     break
+                    
+                case _ as e:
+                    print(e)
             
             self._update_displays()
         

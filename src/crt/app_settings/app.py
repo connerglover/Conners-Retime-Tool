@@ -1,10 +1,12 @@
-from crt.settings.gui import SettingsGUI
+from crt.app_settings.gui import SettingsGUI
 
 from configparser import ConfigParser
 import os
 import appdirs
 
 import PySimpleGUI as sg
+
+from crt.language import Language
 
 class SettingsApp:
     def __init__(self):
@@ -14,6 +16,7 @@ class SettingsApp:
         self.defaults = {
             "enable_updates": "True",
             "theme": "Automatic",
+            "language": "en",
         }
         
         os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
@@ -25,8 +28,11 @@ class SettingsApp:
         
         self._settings_cache = None
         self._sync_missing_settings()
+        
+        self.language = Language(self.config.get("Settings", "language"))
 
     def _restore_defaults(self):
+        self.config = ConfigParser()
         self.config.add_section("Settings")
         for key, value in self.defaults.items():
             self.config.set("Settings", key, value)
@@ -34,10 +40,15 @@ class SettingsApp:
             self.config.write(file)
         self._settings_cache = None
 
+    def _apply_theme(self, theme):
+        en_theme = self.language.translate(self.language.language, "en", theme)
+        self.config.set("Settings", "theme", str(en_theme))
+    
     def _apply(self, values):
         with open(self.file_path, "w") as file:
             self.config.set("Settings", "enable_updates", str(values["enable_updates"]))
-            self.config.set("Settings", "theme", str(values["theme"]))
+            self._apply_theme(values["theme"])
+            self.config.set("Settings", "language", str(values["language"]))
             self.config.write(file)
         self._settings_cache = None
     
@@ -46,6 +57,7 @@ class SettingsApp:
             self._settings_cache = {
                 "enable_updates": self.config.getboolean("Settings", "enable_updates"),
                 "theme": self.config.get("Settings", "theme"),
+                "language": self.config.get("Settings", "language"),
             }
         return self._settings_cache
     
@@ -68,7 +80,7 @@ class SettingsApp:
     def open_window(self):
         settings = self.config_to_dict()
         
-        self.window = SettingsGUI(settings)
+        self.window = SettingsGUI(settings, self.language.content)
         
         while True:
             event, values = self.window.read()

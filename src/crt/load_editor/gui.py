@@ -7,7 +7,7 @@ class LoadEditorGUI:
     """
     Load editor GUI for CRT.
     """
-    def __init__(self, load: Load, framerate: d, language: str = "en"):
+    def __init__(self, load: Load, framerate: d, content: dict):
         """
         Initializes the LoadEditorGUI class.
         
@@ -15,18 +15,8 @@ class LoadEditorGUI:
             load (Load): The load.
             framerate (d): The framerate.
         """
-        match language:
-            case "en":
-                content = {
-                    "Edit Load": "Edit Load",
-                    "Start Frame": "Start Frame",
-                    "End Frame": "End Frame",
-                    "Save Edits": "Save Edits",
-                    "Paste": "Paste",
-                    "Discard Changes": "Discard Changes"
-                }
         
-        self.window = self._create_window(load, framerate, language)
+        self.window = self._create_window(load, framerate, content)
     
     def _create_window(self, load: Load, framerate: d, content: dict) -> sg.Window:
         """
@@ -49,8 +39,8 @@ class LoadEditorGUI:
              sg.Input(default_text=str(load.end_frame), key="end", enable_events=True, 
                      font=("Helvetica", 16), pad=((5, 0), (0, 0)), size=(12, 1)), 
              sg.Button(content["Paste"], font=("Helvetica", 10), key="end_paste")],
-            [sg.Button(content["Save Edits"], font=("Helvetica", 14)), 
-             sg.Button(content["Discard Changes"], font=("Helvetica", 14))]
+            [sg.Button(content["Save Edits"], font=("Helvetica", 14), key="Save Edits"), 
+             sg.Button(content["Discard Changes"], font=("Helvetica", 14), key="Discard Changes")],
         ]
 
         return sg.Window("Editing Load", layout, resizable=False, element_justification="left")

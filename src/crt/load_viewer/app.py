@@ -5,12 +5,13 @@ from crt.time import Time
 from crt import load_editor
 
 from crt.load_viewer.gui import LoadViewerGUI
+from crt.language import Language
 
 class LoadViewer:
     """
     Load viewer for CRT.
     """
-    def __init__(self, time: Time):
+    def __init__(self, time: Time, language: Language):
         """
         Initializes the LoadViewer class.
         
@@ -18,7 +19,8 @@ class LoadViewer:
             time (Time): The time.
         """
         self.time = time
-        self.window = LoadViewerGUI(time)
+        self.language = language
+        self.window = LoadViewerGUI(time, language.content)
         
         self.loads_to_delete = []
 
@@ -29,7 +31,7 @@ class LoadViewer:
         Args:
             load_index (int): The index of the load.
         """
-        load = load_editor.LoadEditor(self.time.loads[load_index], self.time.framerate)
+        load = load_editor.LoadEditor(self.time.loads[load_index], self.time.framerate, self.language)
         load = load.run()
         self.time.mutate_load(load_index, load.start_frame, load.end_frame)
         load_time = round(d(load.length / self.time.framerate), self.time.precision)
