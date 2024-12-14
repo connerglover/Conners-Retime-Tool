@@ -22,8 +22,7 @@ class SettingsGUI:
             [sg.HorizontalSeparator()],
             [sg.Button(content["Restore Defaults"], key="Restore Defaults"), sg.Button(content["Apply"], key="Apply"), sg.Button(content["Cancel"], key="Cancel")],
         ]
-        return sg.Window("CRT Settings", layout, icon="icon.ico")
-    
+        return sg.Window("CRT Settings", layout, resizable=False)
     def _clean_framerate(self,framerate: str) -> d:
         cleaned_framerate = re.sub(r'[^0-9.]', '', framerate)
         

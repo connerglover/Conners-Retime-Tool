@@ -23,7 +23,7 @@ class SessionHistoryGUI:
             [sg.Listbox(values=past_file_paths, size=(50, 10), bind_return_key=True, key="session_history", font=("Helvetica", 14))],
         ]
 
-        return sg.Window("Session History", layout, resizable=False, element_justification="left")
+        return sg.Window("Session History", layout, resizable=False)
     
     def read(self) -> tuple[str, dict]:
         """

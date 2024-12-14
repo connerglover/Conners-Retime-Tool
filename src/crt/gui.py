@@ -38,7 +38,7 @@ class MainWindow:
             [sg.Text(f"{content["With Loads"]}:", font=("Helvetica", 20), justification="right"), sg.StatusBar("00.000", key="loads_display", enable_events=True, font=("Helvetica", 20), size=(17,1), tooltip="Click to Copy Time")]
         ]
 
-        return sg.Window("Conner's Retime Tool", layout, icon="icon.ico")
+        return sg.Window("Conner's Retime Tool", layout, resizable=False)
     
     def read(self):
         """

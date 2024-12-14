@@ -43,7 +43,7 @@ class LoadEditorGUI:
              sg.Button(content["Discard Changes"], font=("Helvetica", 14), key="Discard Changes")],
         ]
 
-        return sg.Window("Editing Load", layout, resizable=False, element_justification="left")
+        return sg.Window("Editing Load", layout, resizable=False)
     
     def read(self) -> tuple[str, dict]:
         """

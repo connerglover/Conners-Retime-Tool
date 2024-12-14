@@ -25,7 +25,7 @@ class SaveAsGUI:
             [sg.Button(content["Save"], font=("Helvetica", 14), key="save"), sg.Button(content["Cancel"], font=("Helvetica", 14), key="cancel")]
         ]
 
-        return sg.Window("Save As", layout, resizable=False, element_justification="left")
+        return sg.Window("Save As", layout, resizable=False)
     
     def read(self) -> tuple[str, dict]:
         """

@@ -40,7 +40,7 @@ class LoadViewerGUI:
             *layout
         ]
 
-        return sg.Window("Load Viewer", layout, resizable=False, element_justification="left")
+        return sg.Window("Load Viewer", layout, resizable=False)
     
     def read(self) -> tuple[str, dict]:
         """
