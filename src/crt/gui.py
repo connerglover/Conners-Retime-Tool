@@ -21,7 +21,7 @@ class MainWindow:
         Returns:
             sg.Window: The main window.
         """
-        menu = [[content["File"], [content["New Time"]+"::New Time", "---", content["Open Time"]+"::Open Time", "---", content["Save"]+"::Save", content["Save As"]+"::Save As", "---", content["Settings"]+"::Settings", "---", content["Exit"]+"::Exit"]], 
+        menu = [[content["File"], [content["New Time"]+"::New Time", "---", content["Open Time"]+"::Open Time", content["Session History"]+"::Session History", "---", content["Save"]+"::Save", content["Save As"]+"::Save As", "---", content["Settings"]+"::Settings", "---", content["Exit"]+"::Exit"]], 
                 [content["Edit (Menu Bar)"], content["Copy Mod Note"]+"::Copy Mod Note", "---", content["Clear Loads"]+"::Clear Loads", content["Edit Loads"]+"::Edit Loads"],
                 [content["Help"], [content["Check for Updates"]+"::Check for Updates", "---", content["Report Issue"]+"::Report Issue", content["Suggest Feature"]+"::Suggest Feature", "---", content["About"]+"::About"]]]
         

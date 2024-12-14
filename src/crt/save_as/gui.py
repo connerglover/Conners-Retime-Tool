@@ -1,5 +1,4 @@
 import PySimpleGUI as sg
-from decimal import Decimal as d
 
 class SaveAsGUI:
     """
@@ -22,7 +21,7 @@ class SaveAsGUI:
         """
         layout = [
             [sg.Text(content["Save As"], font=("Helvetica", 24))],
-            [sg.Text(content["File Name"], font=("Helvetica", 14), key = "File Name"), sg.SaveAs(key="file_name", file_types=(("Load Files", "*.json"),))],
+            [sg.Text(content["File Name"], font=("Helvetica", 14), key = "File "), sg.SaveAs(key="file_name", file_types=(("Load Files", "*.json"),))],
             [sg.Button(content["Save"], font=("Helvetica", 14), key="save"), sg.Button(content["Cancel"], font=("Helvetica", 14), key="cancel")]
         ]
 

@@ -13,6 +13,7 @@ from crt.load import Load
 from crt.gui import MainWindow
 from crt.load_viewer.app import LoadViewer
 from crt.save_as.app import SaveAs
+from crt.session_history import SessionHistory
 from crt.app_settings.app import SettingsApp
 
 class App:
@@ -25,6 +26,8 @@ class App:
         """
         self.time = Time()
         self.file_path = None
+        
+        self.past_file_paths = []
         
         self.settings = SettingsApp()
         self.settings_dict = self.settings.config_to_dict()
@@ -300,6 +303,7 @@ class App:
         """
         Creates a new time.
         """
+        self._save_as_time()
         self.time = Time()
         self._update_window_values({
             "framerate": self.time.framerate,
@@ -328,8 +332,14 @@ class App:
         """
         Opens a time.
         """
-        self.file_path = sg.popup_get_file("Open Time", file_types=(("Time Files", "*.json"),))
-        if self.file_path:
+        old_file_path = self.file_path
+        new_file_path = sg.popup_get_file("Open Time", file_types=(("Time Files", "*.json"),))
+        if new_file_path != old_file_path:
+            self.file_path = new_file_path
+            if old_file_path not in self.past_file_paths and old_file_path is not None:
+                self.past_file_paths.append(old_file_path)
+        
+        if self.file_path and self.file_path != old_file_path:
             with open(self.file_path, "r") as file:
                 try:
                     file_data = json.load(file)
@@ -361,6 +371,53 @@ class App:
         else:
             self._save_as_time()
     
+    def _session_history(self):
+        """
+        Opens the session history.
+        """
+        if not self.file_path:
+            self._show_error("You have no session history.")
+            return
+        
+        old_file_path = self.file_path
+        session_history = SessionHistory(self.language, self.past_file_paths)
+        new_file_path = session_history.run()
+        
+        if old_file_path and sg.popup_yes_no("Save", "Would you like to save the current file?") == "Yes":
+            self._save_time()
+            
+        if new_file_path and new_file_path != old_file_path:
+            self.file_path = new_file_path
+            if new_file_path in self.past_file_paths:
+                self.past_file_paths.remove(new_file_path)
+            if old_file_path and old_file_path not in self.past_file_paths:
+                self.past_file_paths.append(old_file_path)
+            
+            try:
+                with open(new_file_path, "r") as file:
+                    file_data = json.load(file)
+                    
+                loads = [Load(load[0], load[1]) for load in file_data["loads"]]
+                self.time.mutate(
+                    start_frame=file_data["start_frame"],
+                    end_frame=file_data["end_frame"],
+                    framerate=file_data["framerate"]
+                )
+                self.time.loads = loads
+                
+                self._update_window_values({
+                    "start": self.time.start_frame,
+                    "end": self.time.end_frame,
+                    "framerate": self.time.framerate,
+                    "start_loads": "0",
+                    "end_loads": "0"
+                })
+                self._cache_dirty = True
+                self._update_displays()
+                
+            except json.decoder.JSONDecodeError:
+                self._show_error("The file provided is corrupted.\nPlease re-enter debug info.")
+    
     def _settings(self):
         """
         Opens the settings.
@@ -369,14 +426,20 @@ class App:
         old_theme = self.settings_dict["theme"]
         self.settings_dict = self.settings.config_to_dict()
         
-        if self.settings_dict["theme"] != old_theme:
+        if self.settings_dict["theme"] != old_theme or self.settings_dict["language"] != self.language.language:
             sg.popup_ok("Settings", "Please restart the application to apply the changes.")
     
     def _save_as_time(self):
         """
         Saves the time as a new time.
         """
-        self.file_path = SaveAs(self.language).run()
+        old_file_path = self.file_path
+        new_file_path = SaveAs(self.language).run()
+        if new_file_path != old_file_path:
+            self.file_path = new_file_path
+            if old_file_path not in self.past_file_paths and old_file_path is not None:
+                self.past_file_paths.append(old_file_path)
+            
         if self.file_path:
             with open(self.file_path, "w") as file:
                 json.dump(self._convert_to_dict(), file)
@@ -395,12 +458,18 @@ class App:
                 
                 case "Open Time":
                     self._open_time()
+                    
+                case "Session History":
+                    self._session_history()
                 
                 case "Save":
                     self._save_time()
                 
                 case "Save As":
                     self._save_as_time()
+                    
+                case "Session History":
+                    self._session_history()
                 
                 case "Settings":
                     self._settings()
@@ -421,7 +490,7 @@ class App:
                     open_url("https://forms.gle/V5bPaQbcFsk6Cijr5")
                 
                 case "About":
-                    sg.popup("About", f"Conner's Retime Tool v{__version__}\n\nCreated by Conner Glover\n\nCredits:\nMenzo: French and Polish Translations\n© 2024 Conner Glover")
+                    sg.popup("About", f"Conner's Retime Tool v{__version__}\n\nCreated by Conner Glover\n\nCredits:\nMenzo: French and Polish Translations\nAmazinCris: Spanish Translations\n\n© 2024 Conner Glover")
                 
                 case "Edit Loads":
                     self._edit_loads()

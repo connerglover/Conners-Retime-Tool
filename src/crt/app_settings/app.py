@@ -32,6 +32,11 @@ class SettingsApp:
         self.language = Language(self.config.get("Settings", "language"))
 
     def _restore_defaults(self):
+        confirmation = sg.popup_yes_no("Are you sure you want to restore the default settings?", title="Restore Defaults")
+        
+        if confirmation == "No":
+            return
+        
         self.config = ConfigParser()
         self.config.add_section("Settings")
         for key, value in self.defaults.items():
