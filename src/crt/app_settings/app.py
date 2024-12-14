@@ -17,6 +17,7 @@ class SettingsApp:
             "enable_updates": "True",
             "theme": "Automatic",
             "language": "en",
+            "mod_note_format": "Mod Note {time_without_loads} without loads, and {time_with_loads} with loads at {fps} FPS using {plug}"
         }
         
         os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
@@ -54,6 +55,7 @@ class SettingsApp:
             self.config.set("Settings", "enable_updates", str(values["enable_updates"]))
             self._apply_theme(values["theme"])
             self.config.set("Settings", "language", str(values["language"]))
+            self.config.set("Settings", "mod_note_format", str(values["mod_note_format"]))
             self.config.write(file)
         self._settings_cache = None
     
@@ -63,6 +65,7 @@ class SettingsApp:
                 "enable_updates": self.config.getboolean("Settings", "enable_updates"),
                 "theme": self.config.get("Settings", "theme"),
                 "language": self.config.get("Settings", "language"),
+                "mod_note_format": self.config.get("Settings", "mod_note_format")
             }
         return self._settings_cache
     

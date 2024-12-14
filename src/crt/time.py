@@ -7,8 +7,6 @@ class Time:
     A class that represents a time in a video.
     """
     
-    GITHUB_LINK = "[Conner's Retime Tool](https://github.com/connerglover/conners-retime-tool)"
-    
     def __init__(self, start_frame: int = 0, end_frame: int = 0, framerate: d = 60, precision: int = 3, loads: list[Load] | None = None):
         """
         Initializes the Time class.
@@ -79,14 +77,6 @@ class Time:
         if self.framerate == 0:
             return d(0.000)
         return round(d(self.length_loads / d(self.framerate)), self.precision)
-    
-    @property
-    def mod_note(self) -> str:
-        """The formatted mod note."""
-        base_note = f"Mod Note: Retimed to "
-        if self.time != self.time_loads:
-            return f"{base_note}{self.src_format(True)} without loads, and {self.src_format()} with loads at {self.framerate} FPS using {self.GITHUB_LINK}"
-        return f"{base_note}{self.src_format()} at {self.framerate} FPS using {self.GITHUB_LINK}"
     
     def clear_loads(self) -> None:
         """
@@ -182,7 +172,7 @@ class Time:
         
         return
 
-    def _format_time_components(self, time: d) -> tuple[str, str, str, str]:
+    def format_time_components(self, time: d) -> tuple[str, str, str, str]:
         """
         Formats the time components.
         
@@ -220,7 +210,7 @@ class Time:
             str: The formatted time.
         """
         if self._format_cache_dirty or self._format_cache['src']['with_loads' if loads else 'without_loads'] is None:
-            hours, minutes, seconds, ms = self._format_time_components(self.time_loads if loads else self.time)
+            hours, minutes, seconds, ms = self.format_time_components(self.time_loads if loads else self.time)
             formatted = f"{hours}h {minutes}m {seconds}s {ms}ms"
             self._format_cache['src']['with_loads' if loads else 'without_loads'] = formatted
         return self._format_cache['src']['with_loads' if loads else 'without_loads']
@@ -235,7 +225,7 @@ class Time:
         Returns:
             str: The formatted time.
         """
-        hours, minutes, seconds, ms = self._format_time_components(self.time_loads if loads else self.time)
+        hours, minutes, seconds, ms = self.format_time_components(self.time_loads if loads else self.time)
         
         if int(hours) > 0:
             return f"{hours}:{minutes}:{seconds}.{ms}"

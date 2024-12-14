@@ -422,11 +422,11 @@ class App:
         """
         Opens the settings.
         """
+        old_settings_dict = self.settings_dict
         self.settings.open_window()
-        old_theme = self.settings_dict["theme"]
         self.settings_dict = self.settings.config_to_dict()
         
-        if self.settings_dict["theme"] != old_theme or self.settings_dict["language"] != self.language.language:
+        if self.settings_dict != old_settings_dict:
             sg.popup_ok("Settings", "Please restart the application to apply the changes.")
     
     def _save_as_time(self):
@@ -443,6 +443,31 @@ class App:
         if self.file_path:
             with open(self.file_path, "w") as file:
                 json.dump(self._convert_to_dict(), file)
+    
+    @property
+    def _mod_note(self) -> str:
+        """
+        Gets the mod note.
+        
+        Returns:
+            str: The mod note.
+        """
+        return self.settings_dict["mod_note_format"].format(
+            time_with_loads=self.time.iso_format(False),
+            time_without_loads=self.time.iso_format(True),
+            hours=self.time.format_time_components(self.time.time)[0],
+            minutes=self.time.format_time_components(self.time.time)[1],
+            seconds=self.time.format_time_components(self.time.time)[2],
+            milliseconds=self.time.format_time_components(self.time.time)[3],
+            start_frame=self.time.start_frame,
+            end_frame=self.time.end_frame,
+            start_time=round((self.time.start_frame / self.time.framerate, self.time.precision)),
+            end_time=round((self.time.end_frame / self.time.framerate, self.time.precision)),
+            total_frames=self.time.length,
+            fps=self.time.framerate,
+            plug="[Conner's Retime Tool](https://github.com/connerglover/conners-retime-tool)",
+        )
+    
     
     def run(self):
         """
@@ -499,7 +524,7 @@ class App:
                     self._add_loads(values)
                 
                 case "Copy Mod Note":
-                    sg.clipboard_set(self.time.mod_note)
+                    sg.clipboard_set(self._mod_note)
                 
                 case "framerate_paste":
                     self._paste_framerate(values)

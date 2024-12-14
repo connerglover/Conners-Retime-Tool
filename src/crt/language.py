@@ -47,6 +47,7 @@ class Language:
                     "Dark": "Dark",
                     "Light": "Light",
                     "Language" : "Language",
+                    "Mod Note Format": "Mod Note Format",
                     "Restore Defaults": "Restore Defaults",
                     "Apply": "Apply",
                 }
@@ -94,6 +95,7 @@ class Language:
                     "Dark": "Sombre",
                     "Light": "Clair",
                     "Language" : "Langue",
+                    "Mod Note Format": "Format de la note de modérateur",
                     "Restore Defaults": "Restaurer les paramètres par défaut",
                     "Apply": "Appliquer",
                 }
@@ -141,6 +143,7 @@ class Language:
                     "Dark": "Ciemny",
                     "Light": "Jasny",
                     "Language" : "Język",
+                    "Mod Note Format": "Format notatki moderatora",
                     "Restore Defaults": "Przywróć domyślne",
                     "Apply": "Zastosuj",
                 }
@@ -188,6 +191,7 @@ class Language:
                     "Dark": "Oscuro",
                     "Light": "Claro",
                     "Language" : "Idioma",
+                    "Mod Note Format": "Formato de la Nota de Moderador",
                     "Restore Defaults": "Restaurar Valores Predeterminados",
                     "Apply": "Aplicar",
                 }
@@ -235,6 +239,7 @@ class Language:
                     "Dark": "Dark",
                     "Light": "Light",
                     "Language" : "Language",
+                    "Mod Note Format": "Mod Note Format",
                     "Restore Defaults": "Restore Defaults",
                     "Apply": "Apply",
                 }
