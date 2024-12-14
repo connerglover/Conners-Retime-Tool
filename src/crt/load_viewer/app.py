@@ -5,12 +5,13 @@ from crt.time import Time
 from crt import load_editor
 
 from crt.load_viewer.gui import LoadViewerGUI
+from crt.language import Language
 
 class LoadViewer:
     """
     Load viewer for CRT.
     """
-    def __init__(self, time: Time):
+    def __init__(self, time: Time, language: Language):
         """
         Initializes the LoadViewer class.
         
@@ -18,7 +19,8 @@ class LoadViewer:
             time (Time): The time.
         """
         self.time = time
-        self.window = LoadViewerGUI(time)
+        self.language = language
+        self.window = LoadViewerGUI(time, language.content)
         
         self.loads_to_delete = []
 
@@ -29,7 +31,7 @@ class LoadViewer:
         Args:
             load_index (int): The index of the load.
         """
-        load = load_editor.LoadEditor(self.time.loads[load_index], self.time.framerate)
+        load = load_editor.LoadEditor(self.time.loads[load_index], self.time.framerate, self.language)
         load = load.run()
         self.time.mutate_load(load_index, load.start_frame, load.end_frame)
         load_time = round(d(load.length / self.time.framerate), self.time.precision)
@@ -45,27 +47,6 @@ class LoadViewer:
         self.loads_to_delete.append(load_index)
         self.window.window[f"load_{load_index}"].update(visible=False)
 
-    def run(self):
-        """
-        Runs the load viewer.
-        """
-        while True:
-            event, values = self.window.read()
-            
-            for load_index, load in enumerate(self.time.loads):
-                if event == f"edit_{load_index}":
-                    self._edit_load(load_index)
-                
-                elif event == f"delete_{load_index}":
-                    self._delete_load(load_index)
-            
-            if event == sg.WIN_CLOSED:
-                break
-            
-        self.window.close()
-        self._cleanup()
-        
-        return self.time
 
     def _cleanup(self):
         """
@@ -75,5 +56,29 @@ class LoadViewer:
         
         for index in self.loads_to_delete:
             del self.time.loads[index]
+
+    def run(self):
+        """
+        Runs the load viewer.
+        """
+        while True:
+            event, values = self.window.read()
+            
+            if event == sg.WIN_CLOSED:
+                break
+            
+            # Extract load index from event name if it exists
+            if '_' in str(event):
+                action, load_index = event.split('_')
+                load_index = int(load_index)
+                
+                if action == "edit":
+                    self._edit_load(load_index)
+                elif action == "delete":
+                    self._delete_load(load_index)
+            
+        self.window.close()
+        self._cleanup()
         
-        self.time.recalculate()
+        return self.time
+    

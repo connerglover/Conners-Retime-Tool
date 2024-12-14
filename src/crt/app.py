@@ -1,12 +1,20 @@
 import PySimpleGUI as sg
 import json
 import re
+import darkdetect
 
+from webbrowser import open as open_url
+from requests import get as get_url
 from decimal import Decimal as d
 
+from crt._version import __version__
 from crt.time import Time
+from crt.load import Load
 from crt.gui import MainWindow
 from crt.load_viewer.app import LoadViewer
+from crt.save_as.app import SaveAs
+from crt.session_history import SessionHistory
+from crt.app_settings.app import SettingsApp
 
 class App:
     """
@@ -17,21 +25,64 @@ class App:
         Initializes the App class.
         """
         self.time = Time()
+        self.file_path = None
         
-        sg.theme("DarkGrey15")
-        self.main_window = MainWindow()
+        self.past_file_paths = []
+        
+        self.settings = SettingsApp()
+        self.settings_dict = self.settings.config_to_dict()
+        
+        match self.settings_dict["theme"]:
+            case "Automatic":
+                if darkdetect.isDark():
+                    sg.theme("DarkGrey15")
+                else:
+                    sg.theme("LightGray1")
+            case "Dark":
+                sg.theme("DarkGrey15")
+            case "Light":
+                sg.theme("LightGray1")
+        
+        if self.settings_dict["enable_updates"]:
+            self._check_for_updates()
+            
+        self.language = self.settings.language
+        
+        self.window = MainWindow(self.language.content)
+        
+        self._cached_iso_formats = {
+            'with_loads': None,
+            'without_loads': None
+        }
+        self._cache_dirty = True
+        
+    def _check_for_updates(self):
+        """
+        Checks for updates.
+        """
+        response = get_url("https://api.github.com/repos/connerglover/Conners-Retime-Tool/releases/latest")
+        if response.status_code == 200:
+            latest_release = response.json()
+            latest_version = latest_release["tag_name"]
+            if str(latest_version) != str(__version__):
+                confirmation = sg.popup_yes_no("Update Available", f"A new version of CRT is available: {latest_version}. Would you like to update?")
+                if confirmation == "Yes":
+                    open_url("https://github.com/connerglover/Conners-Retime-Tool/releases/latest")
     
     def _edit_loads(self):
         """
         Edits the loads.
         """
-        try:
-            load_window = LoadViewer(self.time)
-            load_window.run()
-        except ValueError as e:
-            self._show_error(e)
-        finally:
-            self.main_window.window["loads_display"].update(self.time.iso_format(True))
+        if self.time.loads:
+            try:
+                load_window = LoadViewer(self.time, self.language)
+                load_window.run()
+            except ValueError as e:
+                self._show_error(e)
+            finally:
+                self.window.window["loads_display"].update(self.time.iso_format(True))
+        else:
+            self._show_error("No loads to edit.")
     
     def _add_loads(self, values):
         """
@@ -43,42 +94,42 @@ class App:
         start_frame = int(values["start_loads"])
         end_frame = int(values["end_loads"])
         
+        if self.time.loads:
+            if self._load_stats['total_loads'] != len(self.time.loads):
+                self._load_stats['avg_length'] = sum(load.end_frame - load.start_frame for load in self.time.loads) / len(self.time.loads)
+                self._load_stats['total_loads'] = len(self.time.loads)
+            
+            if (end_frame - start_frame) > self._load_stats['avg_length'] * 10:
+                if sg.popup_yes_no("Woah!", "This load is concerningly long. Would you like to add the load anyway?") == "No":
+                    return
+        
         try:
             self.time.add_load(start_frame, end_frame)
         except ValueError as e:
             self._show_error(e)
         else:
-            self.main_window.window["start_loads"].update("0")
-            self.main_window.window["end_loads"].update("0")
+            self.window.window["start_loads"].update("0")
+            self.window.window["end_loads"].update("0")
             sg.popup("Loads", "Load added successfully.")
     
     def debug_info_to_frame(self, time: Time, debug_info: str) -> int:
-        """
-        Converts debug info to a frame.
-        
-        Args:
-            time (Time): The time.
-            debug_info (str): The debug info.
-        
-        Returns:
-            int: The frame.
-        """
-        debug_info = "{" + debug_info.split("{", 1)[-1]
-        
+        """Optimized debug info parsing"""
         try:
+            # Find the starting position of the JSON object more efficiently
+            start_pos = debug_info.find('{')
+            if start_pos == -1:
+                raise ValueError("The debug info provided is invalid.\nPlease re-enter debug info.")
+            
+            debug_info = debug_info[start_pos:]
             parsed_debug_info = json.loads(debug_info)
-        except json.decoder.JSONDecodeError:
-            raise ValueError("The debug info provided is invalid.\nPlease re-enter debug info.")
-        
-        try:
             cmt = parsed_debug_info["cmt"]
-        except KeyError:
+            
+            # Optimize decimal calculations
+            output = int(round(d(cmt) * d(time.framerate), 0))
+            return output
+        
+        except (json.decoder.JSONDecodeError, KeyError):
             raise ValueError("The debug info provided is invalid.\nPlease re-enter debug info.")
-        
-        output = d(cmt) * d(time.framerate)
-        output = int(round(output, 0))
-        
-        return output
 
     def _handle_framerate(self, values: dict):
         """
@@ -90,7 +141,7 @@ class App:
         framerate = values["framerate"]
         framerate = self._clean_framerate(framerate)
         
-        self.main_window.window["framerate"].update(framerate)
+        self.window.window["framerate"].update(framerate)
         self.time.mutate(framerate=framerate)
     
     def _handle_time(self, values: dict, key: str):
@@ -125,7 +176,8 @@ class App:
             self._show_error(e)
             time_frame = self.time.start_frame
         
-        self.main_window.window[key].update(time_frame)
+        self.window.window[key].update(time_frame)
+        self._cache_dirty = True
     
     def _handle_loads(self, values: dict, key: str):
         """
@@ -145,7 +197,7 @@ class App:
         else:
             loads = self.clean_frame(loads)
         
-        self.main_window.window[key].update(loads)
+        self.window.window[key].update(loads)
     
     def _clean_framerate(self,framerate: str) -> d:
         cleaned_framerate = re.sub(r'[^0-9.]', '', framerate)
@@ -165,21 +217,17 @@ class App:
         return cleaned_framerate
 
     def clean_frame(self, frame: str) -> int:
-        """
-        Cleans the frame.
+        """Optimized frame cleaning"""
+        # Use a more efficient method to check for digits
+        if not frame or frame.isspace():
+            return 0
         
-        Args:
-            frame (str): The frame.
+        # Compile regex pattern once
+        if not hasattr(self, '_digit_pattern'):
+            self._digit_pattern = re.compile(r'\d+')
         
-        Returns:
-            int: The cleaned frame.
-        """
-        if any(char.isdigit() for char in frame):
-            cleaned_frame = int(re.sub(r"[^0-9]", "", frame))
-        else:
-            cleaned_frame = 0
-        
-        return cleaned_frame
+        match = self._digit_pattern.search(frame)
+        return int(match.group()) if match else 0
     
     def _paste_framerate(self, values: dict):
         """
@@ -191,7 +239,7 @@ class App:
         framerate = sg.clipboard_get()
         framerate = self._clean_framerate(framerate)
         
-        self.main_window.window["framerate"].update(framerate)
+        self.window.window["framerate"].update(framerate)
         self.time.mutate(framerate=framerate)
     
     def _paste_time(self, values: dict, key: str):
@@ -229,7 +277,7 @@ class App:
             self._show_error(e)
             time_frame = self.time.start_frame
         
-        self.main_window.window[key].update(time_frame)
+        self.window.window[key].update(time_frame)
     
     def _paste_loads(self, values: dict, key: str):
         """
@@ -249,16 +297,226 @@ class App:
         else:
             loads = self.clean_frame(loads)
         
-        self.main_window.window[key].update(loads)
+        self.window.window[key].update(loads)
+    
+    def _new_time(self):
+        """
+        Creates a new time.
+        """
+        self._save_as_time()
+        self.time = Time()
+        self._update_window_values({
+            "framerate": self.time.framerate,
+            "start": self.time.start_frame,
+            "end": self.time.end_frame,
+            "start_loads": "0",
+            "end_loads": "0"
+        })
+        self._cache_dirty = True
+    
+    def _convert_to_dict(self) -> dict:
+        """
+        Converts the time to a JSON dictionary.
         
+        Returns:
+            dict: The JSON dictionary.
+        """
+        return {
+            "start_frame": self.time.start_frame,
+            "end_frame": self.time.end_frame,
+            "framerate": self.time.framerate,
+            "loads": [(load.start_frame, load.end_frame) for load in self.time.loads]
+        }
+    
+    def _open_time(self):
+        """
+        Opens a time.
+        """
+        old_file_path = self.file_path
+        new_file_path = sg.popup_get_file("Open Time", file_types=(("Time Files", "*.json"),))
+        if new_file_path != old_file_path:
+            self.file_path = new_file_path
+            if old_file_path not in self.past_file_paths and old_file_path is not None:
+                self.past_file_paths.append(old_file_path)
+        
+        if self.file_path and self.file_path != old_file_path:
+            with open(self.file_path, "r") as file:
+                try:
+                    file_data = json.load(file)
+                except json.decoder.JSONDecodeError:
+                    self._show_error("The file provided is corrupted.\nPlease re-enter debug info.")
+                    return
+                
+                loads = [Load(load[0], load[1]) for load in file_data["loads"]]
+                self.time.mutate(start_frame=file_data["start_frame"], end_frame=file_data["end_frame"], framerate=file_data["framerate"])
+                self.time.loads = loads
+                
+                self.window.window["start"].update(self.time.start_frame)
+                self.window.window["end"].update(self.time.end_frame)
+                self.window.window["framerate"].update(self.time.framerate)
+                self.window.window["start_loads"].update("0")
+                self.window.window["end_loads"].update("0")
+                self.window.window["loads_display"].update(self.time.iso_format(False))
+                self.window.window["without_loads_display"].update(self.time.iso_format(True))
+            
+    def _save_time(self):
+        """
+        Saves the time.
+        """
+        
+        if self.file_path:
+            with open(self.file_path, "w") as file:
+                json.dump(self._convert_to_dict(), file)
+            sg.popup("Save", "Time saved successfully.")
+        else:
+            self._save_as_time()
+    
+    def _session_history(self):
+        """
+        Opens the session history.
+        """
+        if not self.file_path:
+            self._show_error("You have no session history.")
+            return
+        
+        old_file_path = self.file_path
+        session_history = SessionHistory(self.language, self.past_file_paths)
+        new_file_path = session_history.run()
+        
+        if old_file_path and sg.popup_yes_no("Save", "Would you like to save the current file?") == "Yes":
+            self._save_time()
+            
+        if new_file_path and new_file_path != old_file_path:
+            self.file_path = new_file_path
+            if new_file_path in self.past_file_paths:
+                self.past_file_paths.remove(new_file_path)
+            if old_file_path and old_file_path not in self.past_file_paths:
+                self.past_file_paths.append(old_file_path)
+            
+            try:
+                with open(new_file_path, "r") as file:
+                    file_data = json.load(file)
+                    
+                loads = [Load(load[0], load[1]) for load in file_data["loads"]]
+                self.time.mutate(
+                    start_frame=file_data["start_frame"],
+                    end_frame=file_data["end_frame"],
+                    framerate=file_data["framerate"]
+                )
+                self.time.loads = loads
+                
+                self._update_window_values({
+                    "start": self.time.start_frame,
+                    "end": self.time.end_frame,
+                    "framerate": self.time.framerate,
+                    "start_loads": "0",
+                    "end_loads": "0"
+                })
+                self._cache_dirty = True
+                self._update_displays()
+                
+            except json.decoder.JSONDecodeError:
+                self._show_error("The file provided is corrupted.\nPlease re-enter debug info.")
+    
+    def _settings(self):
+        """
+        Opens the settings.
+        """
+        old_settings_dict = self.settings_dict
+        self.settings.open_window()
+        self.settings_dict = self.settings.config_to_dict()
+        
+        if self.settings_dict != old_settings_dict:
+            sg.popup_ok("Settings", "Please restart the application to apply the changes.")
+    
+    def _save_as_time(self):
+        """
+        Saves the time as a new time.
+        """
+        old_file_path = self.file_path
+        new_file_path = SaveAs(self.language).run()
+        if new_file_path != old_file_path:
+            self.file_path = new_file_path
+            if old_file_path not in self.past_file_paths and old_file_path is not None:
+                self.past_file_paths.append(old_file_path)
+            
+        if self.file_path:
+            with open(self.file_path, "w") as file:
+                json.dump(self._convert_to_dict(), file)
+    
+    @property
+    def _mod_note(self) -> str:
+        """
+        Gets the mod note.
+        
+        Returns:
+            str: The mod note.
+        """
+        return self.settings_dict["mod_note_format"].format(
+            time_with_loads=self.time.iso_format(False),
+            time_without_loads=self.time.iso_format(True),
+            hours=self.time.format_time_components(self.time.time)[0],
+            minutes=self.time.format_time_components(self.time.time)[1],
+            seconds=self.time.format_time_components(self.time.time)[2],
+            milliseconds=self.time.format_time_components(self.time.time)[3],
+            start_frame=self.time.start_frame,
+            end_frame=self.time.end_frame,
+            start_time=round((self.time.start_frame / self.time.framerate, self.time.precision)),
+            end_time=round((self.time.end_frame / self.time.framerate, self.time.precision)),
+            total_frames=self.time.length,
+            fps=self.time.framerate,
+            plug="[Conner's Retime Tool](https://github.com/connerglover/conners-retime-tool)",
+        )
+    
+    
     def run(self):
         """
         Runs the application.
         """
+        
         while True:
-            event, values = self.main_window.read()
-            
-            match event:
+            event, values = self.window.read()
+
+            match (event.split("::")[-1] if (isinstance(event, str) and "::" in event) else event):
+                case "New Time":
+                    self._new_time()
+                
+                case "Open Time":
+                    self._open_time()
+                    
+                case "Session History":
+                    self._session_history()
+                
+                case "Save":
+                    self._save_time()
+                
+                case "Save As":
+                    self._save_as_time()
+                    
+                case "Session History":
+                    self._session_history()
+                
+                case "Settings":
+                    self._settings()
+                
+                case "Exit":
+                    break
+                
+                case "Clear Loads":
+                    self.time.clear_loads()
+                
+                case "Check for Updates":
+                    self._check_for_updates()
+                    
+                case "Report Issue":
+                    open_url("https://forms.gle/mnmbgt6cBeL6Dykk6")
+                
+                case "Suggest Feature":
+                    open_url("https://forms.gle/V5bPaQbcFsk6Cijr5")
+                
+                case "About":
+                    sg.popup("About", f"Conner's Retime Tool v{__version__}\n\nCreated by Conner Glover\n\nCredits:\nMenzo: French and Polish Translations\nAmazinCris: Spanish Translations\n\n© 2024 Conner Glover")
+                
                 case "Edit Loads":
                     self._edit_loads()
                 
@@ -266,7 +524,7 @@ class App:
                     self._add_loads(values)
                 
                 case "Copy Mod Note":
-                    sg.clipboard_set(self.time.mod_note)
+                    sg.clipboard_set(self._mod_note)
                 
                 case "framerate_paste":
                     self._paste_framerate(values)
@@ -306,11 +564,16 @@ class App:
                 
                 case sg.WIN_CLOSED:
                     break
+                    
+                case _ as e:
+                    print(e)
             
-            self.main_window.window["without_loads_display"].update(self.time.iso_format(True))
-            self.main_window.window["loads_display"].update(self.time.iso_format(False))
+            self._update_displays()
         
-        self.main_window.close()
+        if self.file_path and sg.popup_yes_no("Exit", "Would you like to save?") == "Yes":
+            self._save_time()
+        
+        self.window.close()
 
     def _show_error(self, message):
         """
@@ -320,3 +583,18 @@ class App:
             message (str): The message to show.
         """
         sg.popup_error("Error", message, title="Error")
+
+    def _update_displays(self):
+        """Update time displays with caching"""
+        if self._cache_dirty:
+            self._cached_iso_formats['with_loads'] = self.time.iso_format(False)
+            self._cached_iso_formats['without_loads'] = self.time.iso_format(True)
+            self._cache_dirty = False
+            
+        self.window.window["without_loads_display"].update(self._cached_iso_formats['without_loads'])
+        self.window.window["loads_display"].update(self._cached_iso_formats['with_loads'])
+
+    def _update_window_values(self, updates: dict):
+        """Batch window updates for better performance"""
+        for key, value in updates.items():
+            self.window.window[key].update(value)
