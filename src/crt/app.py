@@ -14,7 +14,7 @@ from crt.gui import MainWindow
 from crt.load_viewer.app import LoadViewer
 from crt.save_as.app import SaveAs
 from crt.session_history import SessionHistory
-from crt.app_settings.app import SettingsApp
+from crt.app_settings.app import Settings
 
 class App:
     """
@@ -29,7 +29,7 @@ class App:
         
         self.past_file_paths = []
         
-        self.settings = SettingsApp()
+        self.settings = Settings()
         self.settings_dict = self.settings.config_to_dict()
         
         match self.settings_dict["theme"]:

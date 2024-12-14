@@ -8,7 +8,7 @@ import PySimpleGUI as sg
 
 from crt.language import Language
 
-class SettingsApp:
+class Settings:
     def __init__(self):
         self.config = ConfigParser()
         
