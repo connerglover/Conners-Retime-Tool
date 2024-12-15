@@ -1,6 +1,8 @@
 import PySimpleGUI as sg
 
-class SessionHistoryGUI:
+from crt.base_gui import BaseGUI
+
+class SessionHistoryGUI(BaseGUI):
     """
     Session history GUI for CRT.
     """
@@ -24,31 +26,3 @@ class SessionHistoryGUI:
         ]
 
         return sg.Window("Session History", layout, resizable=False)
-    
-    def read(self) -> tuple[str, dict]:
-        """
-        Reads the session history GUI.
-        
-        Returns:
-            tuple[str, dict]: The event and values.
-        """
-        return self.window.read()
-    
-    def close(self):
-        """
-        Closes the session history GUI.
-        """
-        self.window.close()
-    
-    def __enter__(self):
-        """
-        Enters the session history GUI.
-        """
-        return self
-    
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        """
-        Exits the session history GUI.
-        """
-        self.close()
-        

@@ -2,8 +2,9 @@ import PySimpleGUI as sg
 from decimal import Decimal as d
 
 from crt.load import Load
+from crt.base_gui import BaseGUI
 
-class LoadEditorGUI:
+class LoadEditorGUI(BaseGUI):
     """
     Load editor GUI for CRT.
     """
@@ -44,34 +45,3 @@ class LoadEditorGUI:
         ]
 
         return sg.Window("Editing Load", layout, resizable=False)
-    
-    def read(self) -> tuple[str, dict]:
-        """
-        Reads the load editor GUI.
-        
-        Returns:
-            tuple[str, dict]: The event and values.
-        """
-        return self.window.read()
-    
-    def close(self):
-        """
-        Closes the load editor GUI.
-        """
-        self.window.close()
-    
-    def __enter__(self):
-        """
-        Enters the load editor GUI.
-        
-        Returns:
-            LoadEditorGUI: The load editor GUI.
-        """ 
-        return self
-    
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        """
-        Exits the load editor GUI.
-        """
-        self.close()
-        

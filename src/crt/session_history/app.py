@@ -12,6 +12,9 @@ class SessionHistory:
         Initializes the SessionHistory class.
         """
         
+        if not past_file_paths:
+            raise ValueError("No session history.")
+        
         self.window = SessionHistoryGUI(past_file_paths, language.content)
 
     

@@ -22,6 +22,9 @@ class LoadViewer:
         self.language = language
         self.window = LoadViewerGUI(time, language.content)
         
+        if not self.time.loads:
+            raise ValueError("No loads to edit.")
+        
         self.loads_to_delete = []
 
     def _edit_load(self, load_index: int):

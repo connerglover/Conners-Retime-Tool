@@ -1,6 +1,8 @@
 import PySimpleGUI as sg
 
-class MainWindow:
+from crt.base_gui import BaseGUI
+
+class MainWindow(BaseGUI):
     """
     Main window for CRT.
     """
@@ -39,33 +41,3 @@ class MainWindow:
         ]
 
         return sg.Window("Conner's Retime Tool", layout, resizable=False)
-    
-    def read(self):
-        """
-        Reads the main window.
-        
-        Returns:
-            tuple[str, Any]: The event and values.
-        """
-        return self.window.read()
-    
-    def close(self):
-        """
-        Closes the main window.
-        """
-        self.window.close()
-    
-    def __enter__(self):
-        """
-        Enters the main window.
-        
-        Returns:
-            MainWindow: The main window.
-        """
-        return self
-    
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        """
-        Exits the main window.
-        """
-        self.close()

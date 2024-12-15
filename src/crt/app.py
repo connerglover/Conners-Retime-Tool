@@ -14,6 +14,7 @@ from crt.gui import MainWindow
 from crt.load_viewer.app import LoadViewer
 from crt.save_as.app import SaveAs
 from crt.session_history import SessionHistory
+from crt.decorators import error_handler, invalidate_cache
 from crt.app_settings.app import Settings
 
 class App:
@@ -56,6 +57,13 @@ class App:
         }
         self._cache_dirty = True
         
+    def invalidate_caches(self):
+        """
+        Invalidates the caches.
+        """
+        self._cache_dirty = True
+        self._update_displays()
+    
     def _check_for_updates(self):
         """
         Checks for updates.
@@ -69,20 +77,14 @@ class App:
                 if confirmation == "Yes":
                     open_url("https://github.com/connerglover/Conners-Retime-Tool/releases/latest")
     
+    @error_handler
     def _edit_loads(self):
         """
         Edits the loads.
         """
-        if self.time.loads:
-            try:
-                load_window = LoadViewer(self.time, self.language)
-                load_window.run()
-            except ValueError as e:
-                self._show_error(e)
-            finally:
-                self.window.window["loads_display"].update(self.time.iso_format(True))
-        else:
-            self._show_error("No loads to edit.")
+        load_window = LoadViewer(self.time, self.language)
+        load_window.run()
+        self.window.window["loads_display"].update(self.time.iso_format(True))
     
     def _add_loads(self, values):
         """
@@ -103,14 +105,10 @@ class App:
                 if sg.popup_yes_no("Woah!", "This load is concerningly long. Would you like to add the load anyway?") == "No":
                     return
         
-        try:
-            self.time.add_load(start_frame, end_frame)
-        except ValueError as e:
-            self._show_error(e)
-        else:
-            self.window.window["start_loads"].update("0")
-            self.window.window["end_loads"].update("0")
-            sg.popup("Loads", "Load added successfully.")
+        self.time.add_load(start_frame, end_frame)
+        self.window.window["start_loads"].update("0")
+        self.window.window["end_loads"].update("0")
+        sg.popup("Loads", "Load added successfully.")
     
     def debug_info_to_frame(self, time: Time, debug_info: str) -> int:
         """Optimized debug info parsing"""
@@ -131,20 +129,22 @@ class App:
         except (json.decoder.JSONDecodeError, KeyError):
             raise ValueError("The debug info provided is invalid.\nPlease re-enter debug info.")
 
-    def _handle_framerate(self, values: dict):
+    def _set_framerate(self, new_value: str):
         """
         Handles the framerate.
         
         Args:
             values (dict): The values from the main window.
         """
-        framerate = values["framerate"]
+        framerate = new_value
         framerate = self._clean_framerate(framerate)
         
         self.window.window["framerate"].update(framerate)
         self.time.mutate(framerate=framerate)
     
-    def _handle_time(self, values: dict, key: str):
+    @error_handler
+    @invalidate_cache
+    def _set_time(self, key: str, new_value: str):
         """
         Handles the time.
         
@@ -152,34 +152,21 @@ class App:
             values (dict): The values from the main window.
             key (str): The key of the time.
         """
-        time = values[key]
+        time = new_value
         if time and time[-1] == "}":
-            try:
-                time_frame = self.debug_info_to_frame(self.time, time)
-            except ValueError as e:
-                if key == "start":
-                    time_frame = self.time.start_frame
-                elif key == "end":
-                    time_frame = self.time.end_frame
-                else:
-                    raise ValueError("Invalid key provided.")
-                self._show_error(e)
+            time = self.debug_info_to_frame(self.time, time)
         else:
-            time_frame = self.clean_frame(time)
+            time = self.clean_frame(time)
         
-        try:
-            if key == "start":
-                self.time.mutate(start_frame=time_frame)
-            elif key == "end":
-                self.time.mutate(end_frame=time_frame)
-        except ValueError as e:
-            self._show_error(e)
-            time_frame = self.time.start_frame
+        match key:
+            case "start":
+                self.time.mutate(start_frame=time)
+            case "end":
+                self.time.mutate(end_frame=time)
         
-        self.window.window[key].update(time_frame)
-        self._cache_dirty = True
+        self.window.window[key].update(time)
     
-    def _handle_loads(self, values: dict, key: str):
+    def _set_loads(self, key: str, new_value: str):
         """
         Handles the loads.
         
@@ -187,7 +174,7 @@ class App:
             values (dict): The values from the main window.
             key (str): The key of the loads.
         """
-        loads = values[key]
+        loads = new_value
         if loads and loads[-1] == "}":
             try:
                 loads = self.debug_info_to_frame(self.time, loads)
@@ -229,76 +216,7 @@ class App:
         match = self._digit_pattern.search(frame)
         return int(match.group()) if match else 0
     
-    def _paste_framerate(self, values: dict):
-        """
-        Pastes the framerate.
-        
-        Args:
-            values (dict): The values from the main window.
-        """
-        framerate = sg.clipboard_get()
-        framerate = self._clean_framerate(framerate)
-        
-        self.window.window["framerate"].update(framerate)
-        self.time.mutate(framerate=framerate)
-    
-    def _paste_time(self, values: dict, key: str):
-        """
-        Pastes the time.
-        
-        Args:
-            values (dict): The values from the main window.
-            key (str): The key of the time.
-        """
-        time = sg.clipboard_get()
-        if time and time[-1] == "}":
-            try:
-                time_frame = self.debug_info_to_frame(self.time, time)
-            except ValueError as e:
-                if key == "start":
-                    time_frame = self.time.start_frame
-                elif key == "end":
-                    time_frame = self.time.end_frame
-                else:
-                    raise ValueError("Invalid key provided.")
-                self._show_error(e)
-        elif "." in time:
-            time_frame = self.time.framerate * d(time)
-            time_frame = int(round(time_frame, 0))
-        else:
-            time_frame = self.clean_frame(time)
-        
-        try:
-            if key == "start":
-                self.time.mutate(start_frame=time_frame)
-            elif key == "end":
-                self.time.mutate(end_frame=time_frame)
-        except ValueError as e:
-            self._show_error(e)
-            time_frame = self.time.start_frame
-        
-        self.window.window[key].update(time_frame)
-    
-    def _paste_loads(self, values: dict, key: str):
-        """
-        Pastes the loads.
-        
-        Args:
-            values (dict): The values from the main window.
-            key (str): The key of the loads.
-        """
-        loads = sg.clipboard_get()
-        if loads and loads[-1] == "}":
-            try:
-                loads = self.debug_info_to_frame(self.time, loads)
-            except ValueError as e:
-                loads = 0
-                self._show_error(e)
-        else:
-            loads = self.clean_frame(loads)
-        
-        self.window.window[key].update(loads)
-    
+    @invalidate_cache
     def _new_time(self):
         """
         Creates a new time.
@@ -312,7 +230,6 @@ class App:
             "start_loads": "0",
             "end_loads": "0"
         })
-        self._cache_dirty = True
     
     def _convert_to_dict(self) -> dict:
         """
@@ -344,8 +261,7 @@ class App:
                 try:
                     file_data = json.load(file)
                 except json.decoder.JSONDecodeError:
-                    self._show_error("The file provided is corrupted.\nPlease re-enter debug info.")
-                    return
+                    raise ValueError("The file provided is corrupted.")
                 
                 loads = [Load(load[0], load[1]) for load in file_data["loads"]]
                 self.time.mutate(start_frame=file_data["start_frame"], end_frame=file_data["end_frame"], framerate=file_data["framerate"])
@@ -371,13 +287,12 @@ class App:
         else:
             self._save_as_time()
     
+    @error_handler
+    @invalidate_cache
     def _session_history(self):
         """
         Opens the session history.
         """
-        if not self.file_path:
-            self._show_error("You have no session history.")
-            return
         
         old_file_path = self.file_path
         session_history = SessionHistory(self.language, self.past_file_paths)
@@ -412,11 +327,9 @@ class App:
                     "start_loads": "0",
                     "end_loads": "0"
                 })
-                self._cache_dirty = True
-                self._update_displays()
                 
             except json.decoder.JSONDecodeError:
-                self._show_error("The file provided is corrupted.\nPlease re-enter debug info.")
+                raise ValueError("The file provided is corrupted.")
     
     def _settings(self):
         """
@@ -499,9 +412,6 @@ class App:
                 case "Settings":
                     self._settings()
                 
-                case "Exit":
-                    break
-                
                 case "Clear Loads":
                     self.time.clear_loads()
                 
@@ -527,34 +437,34 @@ class App:
                     sg.clipboard_set(self._mod_note)
                 
                 case "framerate_paste":
-                    self._paste_framerate(values)
+                    self._set_framerate(sg.clipboard_get())
                 
                 case "start_paste":
-                    self._paste_time(values, "start")
+                    self.set_time("start", sg.clipboard_get())
                 
                 case "end_paste":
-                    self._paste_time(values, "end")
+                    self.set_time("end", sg.clipboard_get())
                 
                 case "start_loads_paste":
-                    self._paste_loads(values, "start_loads")
+                    self._set_loads("start_loads", sg.clipboard_get())
                 
                 case "end_loads_paste":
-                    self._paste_loads(values, "end_loads")
+                    self._set_loads("end_loads", sg.clipboard_get())
                 
                 case "framerate":
-                    self._handle_framerate(values)
+                    self._set_framerate(values["framerate"])
                 
                 case "start":
-                    self._handle_time(values, "start")
+                    self._set_time("start", values["start"])
                 
                 case "end":
-                    self._handle_time(values, "end")
+                    self._set_time("end", values["end"])
                 
                 case "start_loads":
-                    self._handle_loads(values, "start_loads")
+                    self._set_loads("start_loads", values["start_loads"])
                 
                 case "end_loads":
-                    self._handle_loads(values, "end_loads")
+                    self._set_loads("end_loads", values["end_loads"])
                 
                 case "without_loads_display":
                     sg.clipboard_set(self.time.iso_format(True))
@@ -562,7 +472,7 @@ class App:
                 case "loads_display":
                     sg.clipboard_set(self.time.iso_format(False))
                 
-                case sg.WIN_CLOSED:
+                case sg.WIN_CLOSED | "Exit":
                     break
                     
                 case _ as e:

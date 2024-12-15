@@ -1,6 +1,8 @@
 import PySimpleGUI as sg
 
-class SaveAsGUI:
+from crt.base_gui import BaseGUI
+
+class SaveAsGUI(BaseGUI):
     """
     Save CRT as a time file GUI for CRT.
     """
@@ -26,31 +28,3 @@ class SaveAsGUI:
         ]
 
         return sg.Window("Save As", layout, resizable=False)
-    
-    def read(self) -> tuple[str, dict]:
-        """
-        Reads the save as GUI.
-        
-        Returns:
-            tuple[str, dict]: The event and values.
-        """
-        return self.window.read()
-    
-    def close(self):
-        """
-        Closes the save as GUI.
-        """
-        self.window.close()
-    
-    def __enter__(self):
-        """
-        Enters the save as GUI.
-        """
-        return self
-    
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        """
-        Exits the save as GUI.
-        """
-        self.close()
-        
