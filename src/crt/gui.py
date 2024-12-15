@@ -4,7 +4,7 @@ import PySimpleGUI as sg
 # Local application
 from crt.base_gui import BaseGUI
 
-class MainWindow(BaseGUI):
+class MainGUI(BaseGUI):
     """
     Main window for CRT.
     """

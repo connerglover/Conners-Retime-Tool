@@ -13,7 +13,7 @@ from requests import get as get_url
 from crt._version import __version__
 from crt.app_settings.app import Settings
 from crt.decorators import error_handler, invalidate_cache
-from crt.gui import MainWindow
+from crt.gui import MainGUI
 from crt.load import Load
 from crt.load_viewer.app import LoadViewer
 from crt.save_as.app import SaveAs
@@ -52,7 +52,7 @@ class App:
             
         self.language = self.settings.language
         
-        self.window = MainWindow(self.language.content)
+        self.window = MainGUI(self.language.content)
         
         self._cached_iso_formats = {
             'with_loads': None,
