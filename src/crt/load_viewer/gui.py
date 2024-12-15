@@ -1,6 +1,10 @@
-import PySimpleGUI as sg
+# Standard library
 from decimal import Decimal as d
 
+# Third party
+import PySimpleGUI as sg
+
+# Local application
 from crt.time import Time
 from crt.base_gui import BaseGUI
 

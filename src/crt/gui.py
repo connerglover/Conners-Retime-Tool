@@ -1,5 +1,7 @@
+# Third-party libraries
 import PySimpleGUI as sg
 
+# Local application
 from crt.base_gui import BaseGUI
 
 class MainWindow(BaseGUI):
@@ -41,3 +43,4 @@ class MainWindow(BaseGUI):
         ]
 
         return sg.Window("Conner's Retime Tool", layout, resizable=False)
+    

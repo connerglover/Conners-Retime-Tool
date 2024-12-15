@@ -1,12 +1,14 @@
-from crt.app_settings.gui import SettingsGUI
-
-from configparser import ConfigParser
+# Standard library
 import os
+from configparser import ConfigParser
+
+# Third-party
+import PySimpleGUI as sg
 import appdirs
 
-import PySimpleGUI as sg
-
+# Local application
 from crt.language import Language
+from crt.app_settings.gui import SettingsGUI
 
 class Settings:
     def __init__(self):

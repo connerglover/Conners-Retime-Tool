@@ -1,5 +1,3 @@
-import PySimpleGUI as sg
-
 class BaseGUI:
     """Base class for all CRT GUIs"""
     
@@ -18,3 +16,4 @@ class BaseGUI:
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Context manager exit"""
         self.close()
+        

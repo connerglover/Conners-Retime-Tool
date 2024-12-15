@@ -1,10 +1,12 @@
+# Standard library
 import PySimpleGUI as sg
 import re
 
+# Third-party
 from decimal import Decimal as d
 
+# Local application
 from crt.base_gui import BaseGUI
-
 
 class SettingsGUI(BaseGUI):
     def __init__(self, settings: dict, content: dict):

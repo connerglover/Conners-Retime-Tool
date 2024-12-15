@@ -1,9 +1,12 @@
-import PySimpleGUI as sg
+# Standard library
 from decimal import Decimal as d
 
+# Third party
+import PySimpleGUI as sg
+
+# Local application
 from crt.time import Time
 from crt import load_editor
-
 from crt.load_viewer.gui import LoadViewerGUI
 from crt.language import Language
 

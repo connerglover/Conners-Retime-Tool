@@ -1,5 +1,7 @@
+# Standard library
 import PySimpleGUI as sg
 
+# Local application
 from crt.session_history.gui import SessionHistoryGUI
 from crt.language import Language
 

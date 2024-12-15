@@ -1,5 +1,7 @@
+# Standard library
 from decimal import Decimal as d
 
+# Local application
 from crt.load import Load
 from crt.decorators import memoize_property, invalidate_cache, validate_load, format_time
 
@@ -169,3 +171,4 @@ class Time:
         elif int(minutes) > 0:
             return f"{minutes}:{seconds}.{ms}"
         return f"{seconds}.{ms}"
+    

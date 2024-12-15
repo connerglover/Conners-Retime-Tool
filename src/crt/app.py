@@ -1,21 +1,24 @@
-import PySimpleGUI as sg
+# Standard library
 import json
 import re
-import darkdetect
-
-from webbrowser import open as open_url
-from requests import get as get_url
 from decimal import Decimal as d
+from webbrowser import open as open_url
 
+# Third-party
+import PySimpleGUI as sg
+import darkdetect
+from requests import get as get_url
+
+# Local application
 from crt._version import __version__
-from crt.time import Time
-from crt.load import Load
+from crt.app_settings.app import Settings
+from crt.decorators import error_handler, invalidate_cache
 from crt.gui import MainWindow
+from crt.load import Load
 from crt.load_viewer.app import LoadViewer
 from crt.save_as.app import SaveAs
 from crt.session_history import SessionHistory
-from crt.decorators import error_handler, invalidate_cache
-from crt.app_settings.app import Settings
+from crt.time import Time
 
 class App:
     """
@@ -508,3 +511,4 @@ class App:
         """Batch window updates for better performance"""
         for key, value in updates.items():
             self.window.window[key].update(value)
+            

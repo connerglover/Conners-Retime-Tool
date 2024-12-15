@@ -1,9 +1,11 @@
-import PySimpleGUI as sg
+# Standard library
 import json
-import re
-
 from decimal import Decimal as d
 
+# Third party
+import PySimpleGUI as sg
+
+# Local application
 from crt.load import Load
 from crt.load_editor.gui import LoadEditorGUI
 from crt.language import Language

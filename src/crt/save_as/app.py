@@ -1,5 +1,7 @@
+# Third-party libraries
 import PySimpleGUI as sg
 
+# Local application
 from crt.save_as.gui import SaveAsGUI
 from crt.language import Language
 

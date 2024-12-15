@@ -270,3 +270,4 @@ class Language:
             return target_lang.content[key]
         except (StopIteration, KeyError):
             return text  # Return original text if translation not found
+        
