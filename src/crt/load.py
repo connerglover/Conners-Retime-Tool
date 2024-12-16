@@ -1,6 +1,5 @@
 # Standard library
 from dataclasses import dataclass
-from typing import NoReturn
 
 @dataclass
 class Load:
@@ -11,7 +10,10 @@ class Load:
     end_frame: int
 
     @property
-    def length(self) -> NoReturn:
+    def length(self) -> int:
         """The length of the load.
+        
+        Returns:
+            int: The length of the load.
         """        
         return int(self.end_frame) - int(self.start_frame)
