@@ -1,6 +1,7 @@
 # Standard library
 import os
 from configparser import ConfigParser
+from typing import NoReturn
 
 # Third-party
 import PySimpleGUI as sg
@@ -11,7 +12,11 @@ from crt.language import Language
 from crt.app_settings.gui import SettingsGUI
 
 class Settings:
-    def __init__(self):
+    """Settings for CRT.
+    """
+    def __init__(self) -> NoReturn:
+        """Initializes the Settings class.
+        """        
         self.config = ConfigParser()
         
         self.file_path = os.path.join(appdirs.user_config_dir("CRT"), "settings.ini")
@@ -34,7 +39,9 @@ class Settings:
         
         self.language = Language(self.config.get("Settings", "language"))
 
-    def _restore_defaults(self):
+    def _restore_defaults(self) -> NoReturn:
+        """Restores the settings back to the defautls.
+        """        
         confirmation = sg.popup_yes_no("Are you sure you want to restore the default settings?", title="Restore Defaults")
         
         if confirmation == "No":
@@ -48,11 +55,21 @@ class Settings:
             self.config.write(file)
         self._settings_cache = None
 
-    def _apply_theme(self, theme):
+    def _apply_theme(self, theme: str) -> NoReturn:
+        """Applies the theme to the settings.
+
+        Args:
+            theme (str): Name of the theme.
+        """        
         en_theme = self.language.translate(self.language.language, "en", theme)
         self.config.set("Settings", "theme", str(en_theme))
     
-    def _apply(self, values):
+    def _apply(self, values: dict) -> NoReturn:
+        """Applies the settings.
+
+        Args:
+            values (dict): The values from the settings window.
+        """        
         with open(self.file_path, "w") as file:
             self.config.set("Settings", "enable_updates", str(values["enable_updates"]))
             self._apply_theme(values["theme"])
@@ -61,7 +78,12 @@ class Settings:
             self.config.write(file)
         self._settings_cache = None
     
-    def config_to_dict(self):
+    def config_to_dict(self) -> dict:
+        """Converts the settings into a dictionary.
+
+        Returns:
+            dict: The dictionary of settings.
+        """        
         if self._settings_cache is None:
             self._settings_cache = {
                 "enable_updates": self.config.getboolean("Settings", "enable_updates"),
@@ -71,7 +93,9 @@ class Settings:
             }
         return self._settings_cache
     
-    def _sync_missing_settings(self):
+    def _sync_missing_settings(self) -> NoReturn:
+        """Syncs the settings that aren't present in the config file.
+        """        
         """Ensure all default settings are present in the config file."""
         if not self.config.has_section("Settings"):
             self.config.add_section("Settings")
@@ -87,7 +111,9 @@ class Settings:
                 self.config.write(file)
             self._settings_cache = None
     
-    def open_window(self):
+    def open_window(self) -> NoReturn:
+        """Opens the settings window.
+        """        
         settings = self.config_to_dict()
         
         self.window = SettingsGUI(settings, self.language.content)

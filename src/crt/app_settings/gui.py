@@ -1,9 +1,5 @@
-# Standard library
-import PySimpleGUI as sg
-import re
-
 # Third-party
-from decimal import Decimal as d
+import PySimpleGUI as sg
 
 # Local application
 from crt.base_gui import BaseGUI

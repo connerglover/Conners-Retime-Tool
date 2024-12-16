@@ -3,16 +3,17 @@ import json
 import re
 from decimal import Decimal as d
 from webbrowser import open as open_url
+from typing import NoReturn
 
 # Third-party
-import PySimpleGUI as sg
 import darkdetect
+import PySimpleGUI as sg
 from requests import get as get_url
 
 # Local application
 from crt._version import __version__
 from crt.app_settings.app import Settings
-from crt.decorators import error_handler, invalidate_cache
+from crt.decorators import error_handler
 from crt.gui import MainGUI
 from crt.load import Load
 from crt.load_viewer.app import LoadViewer
@@ -21,12 +22,10 @@ from crt.session_history import SessionHistory
 from crt.time import Time
 
 class App:
+    """Main application for CRT.
     """
-    Main application for CRT.
-    """
-    def __init__(self):
-        """
-        Initializes the App class.
+    def __init__(self) -> NoReturn:
+        """Initializes the App class.
         """
         self.time = Time()
         self.file_path = None
@@ -35,6 +34,12 @@ class App:
         
         self.settings = Settings()
         self.settings_dict = self.settings.config_to_dict()
+        
+        # Add load stats tracking
+        self._load_stats = {
+            'total_loads': 0,
+            'avg_length': 0
+        }
         
         match self.settings_dict["theme"]:
             case "Automatic":
@@ -53,23 +58,9 @@ class App:
         self.language = self.settings.language
         
         self.window = MainGUI(self.language.content)
-        
-        self._cached_iso_formats = {
-            'with_loads': None,
-            'without_loads': None
-        }
-        self._cache_dirty = True
-        
-    def invalidate_caches(self):
-        """
-        Invalidates the caches.
-        """
-        self._cache_dirty = True
-        self._update_displays()
     
-    def _check_for_updates(self):
-        """
-        Checks for updates.
+    def _check_for_updates(self) -> NoReturn:
+        """Checks for updates.
         """
         response = get_url("https://api.github.com/repos/connerglover/Conners-Retime-Tool/releases/latest")
         if response.status_code == 200:
@@ -81,17 +72,15 @@ class App:
                     open_url("https://github.com/connerglover/Conners-Retime-Tool/releases/latest")
     
     @error_handler
-    def _edit_loads(self):
-        """
-        Edits the loads.
-        """
+    def _edit_loads(self) -> NoReturn:
+        """Edits the loads."""
         load_window = LoadViewer(self.time, self.language)
         load_window.run()
-        self.window.window["loads_display"].update(self.time.iso_format(True))
+        self._update_displays()
     
-    def _add_loads(self, values):
-        """
-        Adds the loads.
+    @error_handler
+    def _add_loads(self, values: dict) -> NoReturn:
+        """Adds the loads.
         
         Args:
             values (dict): The values from the main window.
@@ -111,10 +100,23 @@ class App:
         self.time.add_load(start_frame, end_frame)
         self.window.window["start_loads"].update("0")
         self.window.window["end_loads"].update("0")
+        self._update_displays()
         sg.popup("Loads", "Load added successfully.")
     
     def debug_info_to_frame(self, time: Time, debug_info: str) -> int:
-        """Optimized debug info parsing"""
+        """Converts debug info to a frame.
+
+        Args:
+            time (Time): The time object.
+            debug_info (str): The debug info.
+
+        Raises:
+            ValueError: The debug info provided is invalid.
+            ValueError: The debug info provided is invalid.
+
+        Returns:
+            int: The frame.
+        """        
         try:
             # Find the starting position of the JSON object more efficiently
             start_pos = debug_info.find('{')
@@ -132,7 +134,7 @@ class App:
         except (json.decoder.JSONDecodeError, KeyError):
             raise ValueError("The debug info provided is invalid.\nPlease re-enter debug info.")
 
-    def _set_framerate(self, new_value: str):
+    def _set_framerate(self, new_value: str) -> NoReturn:
         """
         Handles the framerate.
         
@@ -146,8 +148,7 @@ class App:
         self.time.mutate(framerate=framerate)
     
     @error_handler
-    @invalidate_cache
-    def _set_time(self, key: str, new_value: str):
+    def _set_time(self, key: str, new_value: str) -> NoReturn:
         """
         Handles the time.
         
@@ -168,8 +169,9 @@ class App:
                 self.time.mutate(end_frame=time)
         
         self.window.window[key].update(time)
+        self._update_displays()
     
-    def _set_loads(self, key: str, new_value: str):
+    def _set_loads(self, key: str, new_value: str) -> NoReturn:
         """
         Handles the loads.
         
@@ -190,6 +192,14 @@ class App:
         self.window.window[key].update(loads)
     
     def _clean_framerate(self,framerate: str) -> d:
+        """Cleans a framerate for input validation.
+
+        Args:
+            framerate (str): The framerate to clean.
+
+        Returns:
+            d: The cleaned framerate.
+        """        
         cleaned_framerate = re.sub(r'[^0-9.]', '', framerate)
         
         if not re.search(r'[0-9]', cleaned_framerate):
@@ -207,7 +217,14 @@ class App:
         return cleaned_framerate
 
     def clean_frame(self, frame: str) -> int:
-        """Optimized frame cleaning"""
+        """Cleans a frame for input validation.
+
+        Args:
+            frame (str): The frame to clean.
+
+        Returns:
+            int: The cleaned frame.
+        """        
         # Use a more efficient method to check for digits
         if not frame or frame.isspace():
             return 0
@@ -219,10 +236,8 @@ class App:
         match = self._digit_pattern.search(frame)
         return int(match.group()) if match else 0
     
-    @invalidate_cache
-    def _new_time(self):
-        """
-        Creates a new time.
+    def _new_time(self) -> NoReturn:
+        """Creates a new time.
         """
         self._save_as_time()
         self.time = Time()
@@ -233,13 +248,14 @@ class App:
             "start_loads": "0",
             "end_loads": "0"
         })
+        
+        self._update_displays()
     
     def _convert_to_dict(self) -> dict:
-        """
-        Converts the time to a JSON dictionary.
+        """Converts the time to a JSON dictionary.
         
         Returns:
-            dict: The JSON dictionary.
+            dict: The JSON dictionary containg the time's information.
         """
         return {
             "start_frame": self.time.start_frame,
@@ -248,9 +264,8 @@ class App:
             "loads": [(load.start_frame, load.end_frame) for load in self.time.loads]
         }
     
-    def _open_time(self):
-        """
-        Opens a time.
+    def _open_time(self) -> NoReturn:
+        """Opens a time.
         """
         old_file_path = self.file_path
         new_file_path = sg.popup_get_file("Open Time", file_types=(("Time Files", "*.json"),))
@@ -278,9 +293,8 @@ class App:
                 self.window.window["loads_display"].update(self.time.iso_format(False))
                 self.window.window["without_loads_display"].update(self.time.iso_format(True))
             
-    def _save_time(self):
-        """
-        Saves the time.
+    def _save_time(self) -> NoReturn:
+        """Saves the time.
         """
         
         if self.file_path:
@@ -291,10 +305,8 @@ class App:
             self._save_as_time()
     
     @error_handler
-    @invalidate_cache
-    def _session_history(self):
-        """
-        Opens the session history.
+    def _session_history(self) -> NoReturn:
+        """Opens the session history.
         """
         
         old_file_path = self.file_path
@@ -333,10 +345,11 @@ class App:
                 
             except json.decoder.JSONDecodeError:
                 raise ValueError("The file provided is corrupted.")
+        
+        self._update_displays()
     
-    def _settings(self):
-        """
-        Opens the settings.
+    def _settings(self) -> NoReturn:
+        """Opens the settings.
         """
         old_settings_dict = self.settings_dict
         self.settings.open_window()
@@ -345,9 +358,8 @@ class App:
         if self.settings_dict != old_settings_dict:
             sg.popup_ok("Settings", "Please restart the application to apply the changes.")
     
-    def _save_as_time(self):
-        """
-        Saves the time as a new time.
+    def _save_as_time(self) -> NoReturn:
+        """Saves the time as a new time.
         """
         old_file_path = self.file_path
         new_file_path = SaveAs(self.language).run()
@@ -362,8 +374,7 @@ class App:
     
     @property
     def _mod_note(self) -> str:
-        """
-        Gets the mod note.
+        """Gets the mod note.
         
         Returns:
             str: The mod note.
@@ -371,23 +382,46 @@ class App:
         return self.settings_dict["mod_note_format"].format(
             time_with_loads=self.time.iso_format(False),
             time_without_loads=self.time.iso_format(True),
-            hours=self.time.format_time_components(self.time.time)[0],
-            minutes=self.time.format_time_components(self.time.time)[1],
-            seconds=self.time.format_time_components(self.time.time)[2],
-            milliseconds=self.time.format_time_components(self.time.time)[3],
+            hours=self.time.format_time_components(self.time.with_loads)[0],
+            minutes=self.time.format_time_components(self.time.with_loads)[1],
+            seconds=self.time.format_time_components(self.time.with_loads)[2],
+            milliseconds=self.time.format_time_components(self.time.with_loads)[3],
             start_frame=self.time.start_frame,
             end_frame=self.time.end_frame,
             start_time=round((self.time.start_frame / self.time.framerate, self.time.precision)),
             end_time=round((self.time.end_frame / self.time.framerate, self.time.precision)),
-            total_frames=self.time.length,
+            total_frames=self.time.length_with_loads,
             fps=self.time.framerate,
             plug="[Conner's Retime Tool](https://github.com/connerglover/conners-retime-tool)",
         )
     
     
-    def run(self):
+    def _update_displays(self) -> NoReturn:
+        """Update time displays
         """
-        Runs the application.
+        self.window.window["without_loads_display"].update(self.time.iso_format(True))
+        self.window.window["loads_display"].update(self.time.iso_format(False))
+
+    def _update_window_values(self, updates: dict) -> NoReturn:
+        """Updates window values.
+
+        Args:
+            updates (dict): The updates to apply.
+        """        
+        for key, value in updates.items():
+            self.window.window[key].update(value)
+    
+    def _show_error(self, message):
+        """
+        Shows a popup message of the error.
+        
+        Args:
+            message (str): The message to show.
+        """
+        sg.popup_error("Error", message, title="Error")
+    
+    def run(self) -> NoReturn:
+        """Runs the application.
         """
         
         while True:
@@ -487,28 +521,3 @@ class App:
             self._save_time()
         
         self.window.close()
-
-    def _show_error(self, message):
-        """
-        Shows the error.
-        
-        Args:
-            message (str): The message to show.
-        """
-        sg.popup_error("Error", message, title="Error")
-
-    def _update_displays(self):
-        """Update time displays with caching"""
-        if self._cache_dirty:
-            self._cached_iso_formats['with_loads'] = self.time.iso_format(False)
-            self._cached_iso_formats['without_loads'] = self.time.iso_format(True)
-            self._cache_dirty = False
-            
-        self.window.window["without_loads_display"].update(self._cached_iso_formats['without_loads'])
-        self.window.window["loads_display"].update(self._cached_iso_formats['with_loads'])
-
-    def _update_window_values(self, updates: dict):
-        """Batch window updates for better performance"""
-        for key, value in updates.items():
-            self.window.window[key].update(value)
-            

@@ -1,6 +1,11 @@
-import PySimpleGUI as sg
+# Standard library
 from decimal import Decimal as d
+from typing import NoReturn
 
+# Third-party
+import PySimpleGUI as sg
+
+# Local application
 from crt.load import Load
 from crt.base_gui import BaseGUI
 
@@ -8,7 +13,7 @@ class LoadEditorGUI(BaseGUI):
     """
     Load editor GUI for CRT.
     """
-    def __init__(self, load: Load, framerate: d, content: dict):
+    def __init__(self, load: Load, framerate: d, content: dict) -> NoReturn:
         """
         Initializes the LoadEditorGUI class.
         

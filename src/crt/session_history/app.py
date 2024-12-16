@@ -1,4 +1,7 @@
 # Standard library
+from typing import NoReturn
+
+# Third-party library
 import PySimpleGUI as sg
 
 # Local application
@@ -6,10 +9,9 @@ from crt.session_history.gui import SessionHistoryGUI
 from crt.language import Language
 
 class SessionHistory:
+    """Session history for CRT.
     """
-    Session history for CRT.
-    """
-    def __init__(self, language: Language, past_file_paths: list[str]):
+    def __init__(self, language: Language, past_file_paths: list[str]) -> NoReturn:
         """
         Initializes the SessionHistory class.
         """
@@ -21,8 +23,7 @@ class SessionHistory:
 
     
     def run(self) -> str:
-        """
-        Runs the session history.
+        """Runs the session history.
         
         Returns:
             str: The file path.

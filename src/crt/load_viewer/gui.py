@@ -1,5 +1,6 @@
 # Standard library
 from decimal import Decimal as d
+from typing import NoReturn
 
 # Third party
 import PySimpleGUI as sg
@@ -12,7 +13,7 @@ class LoadViewerGUI(BaseGUI):
     """
     Load viewer GUI for CRT.
     """
-    def __init__(self, time: Time, content: dict):
+    def __init__(self, time: Time, content: dict) -> NoReturn:
         """
         Initializes the LoadViewerGUI class.
         

@@ -1,5 +1,6 @@
 # Standard library
 from decimal import Decimal as d
+from typing import NoReturn
 
 # Third party
 import PySimpleGUI as sg
@@ -14,7 +15,7 @@ class LoadViewer:
     """
     Load viewer for CRT.
     """
-    def __init__(self, time: Time, language: Language):
+    def __init__(self, time: Time, language: Language) -> NoReturn:
         """
         Initializes the LoadViewer class.
         
@@ -30,7 +31,7 @@ class LoadViewer:
         
         self.loads_to_delete = []
 
-    def _edit_load(self, load_index: int):
+    def _edit_load(self, load_index: int) -> NoReturn:
         """
         Edits the load.
         
@@ -43,7 +44,7 @@ class LoadViewer:
         load_time = round(d(load.length / self.time.framerate), self.time.precision)
         self.window.window[f"display_{load_index}"].update(f"{load_index+1}: {load_time}")
 
-    def _delete_load(self, load_index: int):
+    def _delete_load(self, load_index: int) -> NoReturn:
         """
         Deletes the load.
         
@@ -54,7 +55,7 @@ class LoadViewer:
         self.window.window[f"load_{load_index}"].update(visible=False)
 
 
-    def _cleanup(self):
+    def _cleanup(self) -> NoReturn:
         """
         Cleans up the load viewer.
         """
@@ -63,7 +64,7 @@ class LoadViewer:
         for index in self.loads_to_delete:
             del self.time.loads[index]
 
-    def run(self):
+    def run(self) -> Time:
         """
         Runs the load viewer.
         """

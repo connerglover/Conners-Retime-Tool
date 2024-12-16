@@ -1,12 +1,17 @@
+# Standard Library
+from typing import NoReturn
+
+# Third-party
 import PySimpleGUI as sg
 
+# Local application
 from crt.base_gui import BaseGUI
 
 class SessionHistoryGUI(BaseGUI):
     """
     Session history GUI for CRT.
     """
-    def __init__(self, past_file_paths: list[str], content: dict):
+    def __init__(self, past_file_paths: list[str], content: dict) -> NoReturn:
         """
         Initializes the SessionHistoryGUI class.
         """

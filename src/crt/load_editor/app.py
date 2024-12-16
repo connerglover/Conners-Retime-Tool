@@ -1,6 +1,7 @@
 # Standard library
 import json
 from decimal import Decimal as d
+from typing import NoReturn
 
 # Third party
 import PySimpleGUI as sg
@@ -11,12 +12,10 @@ from crt.load_editor.gui import LoadEditorGUI
 from crt.language import Language
 
 class LoadEditor:
+    """Load editor for CRT.
     """
-    Load editor for CRT.
-    """
-    def __init__(self, load: Load, framerate: d, language: Language):
-        """
-        Initializes the LoadEditor class.
+    def __init__(self, load: Load, framerate: d, language: Language) -> NoReturn:
+        """Initializes the LoadEditor class.
         
         Args:
             load (Load): The load.
@@ -26,9 +25,8 @@ class LoadEditor:
         self.framerate = framerate
         self.window = LoadEditorGUI(load, framerate, language.content)
     
-    def _handle_frame_input(self, values: dict, key: str):
-        """
-        Handles the frame input.
+    def _handle_frame_input(self, values: dict, key: str) -> NoReturn:
+        """Handles the frame input.
         
         Args:
             values (dict): The values from the main window.
@@ -47,8 +45,7 @@ class LoadEditor:
         self.window.window[key].update(int(frame))
     
     def _debug_info_to_frame(self, debug_info: str) -> int:
-        """
-        Converts debug info to a frame.
+        """Converts debug info to a frame.
         
         Args:
             debug_info (str): The debug info.
@@ -74,8 +71,7 @@ class LoadEditor:
         return output
     
     def _clean_frame(self, frame: str) -> int:
-        """
-        Cleans the frame.
+        """Cleans the frame.
         
         Args:
             frame (str): The frame.
@@ -86,9 +82,8 @@ class LoadEditor:
         digits = ''.join(char for char in frame if char.isdigit())
         return int(digits) if digits else 0
     
-    def run(self):
-        """
-        Runs the load editor.
+    def run(self) -> NoReturn:
+        """Runs the load editor.
         """
         while True:
             event, values = self.window.read()

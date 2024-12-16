@@ -1,22 +1,24 @@
+# Standard Library
+from typing import NoReturn
+
+# Third-party
 import PySimpleGUI as sg
 
+# Local application
 from crt.base_gui import BaseGUI
 
 class SaveAsGUI(BaseGUI):
+    """Save CRT as a time file GUI for CRT.
     """
-    Save CRT as a time file GUI for CRT.
-    """
-    def __init__(self, content: dict):
-        """
-        Initializes the SaveAsGUI class.
+    def __init__(self, content: dict) -> NoReturn:
+        """Initializes the SaveAsGUI class.
         """
         
         self.window = self._create_window(content)
 
     
     def _create_window(self, content: dict) -> sg.Window:
-        """
-        Creates the save as GUI.
+        """Creates the save as GUI.
         
         Returns:
             sg.Window: The save as GUI.

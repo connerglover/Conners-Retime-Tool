@@ -1,9 +1,17 @@
 # Standard library
+from decimal import Decimal as d
 from functools import wraps
 from typing import Callable, Tuple
-from decimal import Decimal as d
 
-def error_handler(func: Callable):
+def error_handler(func: Callable) -> Callable:
+    """Handles errors by showing popup rather than crashing the program.
+
+    Args:
+        func (Callable): The function to wrap.
+
+    Returns:
+        Callable: The function containing the error handling.
+    """    
     @wraps(func)
     def wrapper(self, *args, **kwargs):
         try:
@@ -13,25 +21,19 @@ def error_handler(func: Callable):
             return None
     return wrapper
 
-def invalidate_cache(func: Callable):
-    @wraps(func)
-    def wrapper(self, *args, **kwargs):
-        result = func(self, *args, **kwargs)
-        self.invalidate_caches()
-        return result
-    return wrapper
+def validate_load(func: Callable) -> Callable:
+    """Validates the load.
 
-def memoize_property(func: Callable):
-    cache_key = f'_cache_{func.__name__}'
-    @property
-    @wraps(func)
-    def wrapper(self):
-        if not hasattr(self, cache_key) or self._cache_dirty:
-            setattr(self, cache_key, func(self))
-        return getattr(self, cache_key)
-    return wrapper
+    Args:
+        func (Callable): The function to wrap. 
 
-def validate_load(func: Callable):
+    Raises:
+        ValueError: The duration of the code is 0.000
+        ValueError: The load time ends before it starts.
+
+    Returns:
+        Callable: The function containing the validated loads.
+    """    
     @wraps(func)
     def wrapper(self, *args, **kwargs):
         start_frame = kwargs.get('start_frame', args[0] if args else None)
@@ -46,7 +48,23 @@ def validate_load(func: Callable):
     return wrapper
 
 def format_time(func: Callable) -> Callable:
+    """Pre-formats time into hours, minutes, seconds, and milliseconds.
+
+    Args:
+        func (Callable): Function to wrap.
+
+    Returns:
+        Callable: Function containing the formatted time.
+    """    
     def format_components(time: d) -> Tuple[str, str, str, str]:
+        """Formats the tiem into hours, minutes, seconds, and milliseconds.
+
+        Args:
+            time (d): The time to format.
+
+        Returns:
+            Tuple[str, str, str, str]: A tuple containing the elements of the formatted time.
+        """        
         time_str = str(max(time, d(0)))
         
         if '.' in time_str:
@@ -66,7 +84,7 @@ def format_time(func: Callable) -> Callable:
 
     @wraps(func)
     def wrapper(self, loads: bool = False) -> str:
-        time_value = self.time_loads if loads else self.time
+        time_value = self.without_loads if loads else self.with_loads
         hours, minutes, seconds, ms = format_components(time_value)
         return func(self, hours, minutes, seconds, ms)
     return wrapper

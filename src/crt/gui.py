@@ -5,12 +5,10 @@ import PySimpleGUI as sg
 from crt.base_gui import BaseGUI
 
 class MainGUI(BaseGUI):
-    """
-    Main window for CRT.
+    """Main window for CRT.
     """
     def __init__(self, content: dict):
-        """
-        Initializes the MainWindow class.
+        """Initializes the MainWindow class.
         
         Args:
             language (str): The language of the window.
@@ -19,8 +17,7 @@ class MainGUI(BaseGUI):
         self.window = self._create_window(content)
     
     def _create_window(self, content: dict) -> sg.Window:
-        """
-        Creates the main window.
+        """Creates the main window.
         
         Returns:
             sg.Window: The main window.

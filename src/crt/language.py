@@ -1,5 +1,13 @@
+# Standard Library
+from typing import NoReturn
+
 class Language:
-    def __init__(self, language: str = "en"):
+    def __init__(self, language: str) -> NoReturn:
+        """Initializes the language object.
+
+        Args:
+            language (str): The language.
+        """        
         self.language = language
         
         match language:
