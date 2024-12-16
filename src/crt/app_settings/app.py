@@ -1,7 +1,7 @@
 # Standard library
 import os
 from configparser import ConfigParser
-from typing import NoReturn
+from typing import NoReturn, Optional
 
 # Third-party
 import PySimpleGUI as sg
@@ -30,7 +30,7 @@ class Settings:
         os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
         
         if not os.path.exists(self.file_path):
-            self._restore_defaults()
+            self._restore_defaults(False)
         else:
             self.config.read(self.file_path)
         
@@ -39,13 +39,14 @@ class Settings:
         
         self.language = Language(self.config.get("Settings", "language"))
 
-    def _restore_defaults(self) -> NoReturn:
+    def _restore_defaults(self, prompt: Optional[bool] = True) -> NoReturn:
         """Restores the settings back to the defautls.
         """        
-        confirmation = sg.popup_yes_no("Are you sure you want to restore the default settings?", title="Restore Defaults")
-        
-        if confirmation == "No":
-            return
+        if prompt:
+            confirmation = sg.popup_yes_no("Are you sure you want to restore the default settings?", title="Restore Defaults")
+            
+            if confirmation == "No":
+                return
         
         self.config = ConfigParser()
         self.config.add_section("Settings")
