@@ -1,5 +1,7 @@
 # Conner's Retime Tool (CRT)
 
+> **Disclaimer**: This project currently requires a personal PySimpleGUI to use after 30 days. A new GUI using a better framework is planned.
+
 CRT is a tool that aids speedrunners and moderators in finding the accurate time of a speedrun with or without loads. 
 
 ## Installation
@@ -30,26 +32,12 @@ To use CRT refer to the following step-by-step tutorial.
 - Menzo - French & Polish Translation
 - Cris - Spanish Translation
 
-## License
-```
-MIT License
+## Star History
 
-Copyright (c) 2024 Conner Glover
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.```
+<a href="https://www.star-history.com/?repos=connerglover%2FConners-Retime-Tool&type=date&legend=top-left">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=connerglover/Conners-Retime-Tool&type=date&theme=dark&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=connerglover/Conners-Retime-Tool&type=date&legend=top-left" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=connerglover/Conners-Retime-Tool&type=date&legend=top-left" />
+ </picture>
+</a>
