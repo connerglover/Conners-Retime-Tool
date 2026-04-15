@@ -23,18 +23,10 @@ def _popup_error(title: str, message: str):
 
 
 def _parse_frame(text: str, framerate: d) -> int:
-    """Parse a frame input string.
-
-    Rules (same as App._parse_frame_input):
-    1. If it contains JSON debug info, extract cmt * framerate.
-    2. Strip non-numeric/non-decimal characters.
-    3. Empty → 0.
-    4. Contains decimal → treat as seconds timestamp, convert to frame.
-    5. Otherwise → plain integer.
-    """
+    """Parse a frame input string following the full validation spec."""
     text = str(text).strip()
 
-    # 1 — debug info
+    # Debug info detection
     if '{' in text and '"cmt"' in text:
         start = text.find('{')
         try:
@@ -45,10 +37,9 @@ def _parse_frame(text: str, framerate: d) -> int:
         except (json.JSONDecodeError, KeyError, InvalidOperation):
             pass
 
-    # 2 — strip non-numeric/non-decimal
+    # Strip non-numeric/non-decimal characters
     cleaned = re.sub(r'[^0-9.]', '', text)
 
-    # 3 — empty
     if not cleaned or not re.search(r'[0-9]', cleaned):
         return 0
 
@@ -57,7 +48,7 @@ def _parse_frame(text: str, framerate: d) -> int:
         idx = cleaned.find('.')
         cleaned = cleaned[:idx + 1] + cleaned[idx + 1:].replace('.', '')
 
-    # 4 — decimal → timestamp
+    # Decimal → timestamp conversion
     if '.' in cleaned:
         try:
             fps = d(str(framerate)) if framerate and framerate != 0 else d('1')
@@ -65,7 +56,6 @@ def _parse_frame(text: str, framerate: d) -> int:
         except (InvalidOperation, ValueError):
             return 0
 
-    # 5 — plain integer
     try:
         return int(cleaned)
     except ValueError:
@@ -73,10 +63,9 @@ def _parse_frame(text: str, framerate: d) -> int:
 
 
 class LoadViewer:
-    """Load viewer for CRT — handles inline editing without a separate LoadEditor."""
+    """Load viewer for CRT — handles inline editing of all loads at once."""
 
     def __init__(self, time: Time, language: Language) -> NoReturn:
-        """Initializes the LoadViewer class."""
         if not time.loads:
             raise ValueError("No loads to edit.")
 
@@ -85,23 +74,27 @@ class LoadViewer:
         self.window = LoadViewerGUI(time, language.content)
         self._loads_to_delete: list[int] = []
 
-    def _save_load(self, index: int, start_text: str, end_text: str) -> NoReturn:
-        """Validates and saves an inline-edited load."""
-        start_frame = _parse_frame(start_text, self.time.framerate)
-        end_frame = _parse_frame(end_text, self.time.framerate)
+    def _save_all(self, rows_data: dict) -> list[str]:
+        """Validate and save all edited rows. Returns a list of error messages."""
+        errors = []
+        for index_str, data in rows_data.items():
+            index = int(index_str)
+            if index >= len(self.time.loads):
+                continue
+            start_frame = _parse_frame(data.get("start", "0"), self.time.framerate)
+            end_frame = _parse_frame(data.get("end", "0"), self.time.framerate)
 
-        # Validate manually (bypassing the decorator's broken arg-position logic)
-        if start_frame == end_frame:
-            raise ValueError("The duration of the load is 0.000")
-        if start_frame > end_frame:
-            raise ValueError("The load time ends before it starts.")
+            if start_frame == end_frame:
+                errors.append(f"Load {index + 1}: duration is 0 (start equals end)")
+                continue
+            if start_frame > end_frame:
+                errors.append(f"Load {index + 1}: end frame is before start frame")
+                continue
 
-        # Directly mutate the load (skip @validate_load to avoid the args[0]=index bug)
-        self.time.loads[index].start_frame = start_frame
-        self.time.loads[index].end_frame = end_frame
+            self.time.loads[index].start_frame = start_frame
+            self.time.loads[index].end_frame = end_frame
 
-        # Refresh the display label in the GUI
-        self.window.refresh_row(index)
+        return errors
 
     def _delete_load(self, index: int) -> NoReturn:
         """Marks a load for deletion and hides its row."""
@@ -122,12 +115,17 @@ class LoadViewer:
             if event is None or event == "done":
                 break
 
-            if isinstance(event, str) and event.startswith("save_"):
-                try:
-                    index = int(event.split("_", 1)[1])
-                    self._save_load(index, values.get("start", "0"), values.get("end", "0"))
-                except (ValueError, IndexError) as e:
-                    _popup_error("Error", str(e))
+            elif event == "save_all":
+                rows_data = values.get("rows", {})
+                errors = self._save_all(rows_data)
+                if errors:
+                    _popup_error("Validation Error", "\n".join(errors))
+                else:
+                    break
+
+            elif event == "discard":
+                # Inputs already reset by the GUI; just close
+                break
 
             elif isinstance(event, str) and event.startswith("delete_"):
                 try:
