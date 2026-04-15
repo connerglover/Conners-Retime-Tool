@@ -1,17 +1,17 @@
 # Standard library
 import json
 import re
-from decimal import Decimal as d
+from decimal import Decimal as d, InvalidOperation, DivisionByZero, DivisionUndefined
 from webbrowser import open as open_url
 from typing import NoReturn
 
 # Third-party
 import darkdetect
 from PySide6.QtWidgets import (
-    QApplication, QMessageBox, QFileDialog, QInputDialog
+    QApplication, QMessageBox, QFileDialog
 )
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QGuiApplication, QClipboard
+from PySide6.QtGui import QGuiApplication
 from requests import get as get_url
 
 # Local application
@@ -256,6 +256,32 @@ def _clipboard_set(text: str):
     QGuiApplication.clipboard().setText(str(text))
 
 
+def _time_components(time_val: d):
+    """Extracts (hours, minutes, seconds, milliseconds) strings from a Decimal time value.
+
+    This replicates the logic inside the @format_time decorator's format_components helper
+    so it can be called directly without going through the decorator wrapper.
+    """
+    time_str = str(max(time_val, d(0)))
+    if '.' in time_str:
+        seconds_part, ms_part = time_str.split(".", 1)
+        seconds_total = int(seconds_part)
+        milliseconds = int(ms_part)
+    else:
+        seconds_total = int(time_str)
+        milliseconds = 0
+
+    minutes, seconds = divmod(seconds_total, 60)
+    hours, minutes = divmod(minutes, 60)
+
+    return (
+        f"{hours:02}",
+        f"{minutes:02}",
+        f"{seconds:02}",
+        str(milliseconds).rjust(3, "0"),
+    )
+
+
 class App:
     """Main application for CRT."""
 
@@ -328,8 +354,8 @@ class App:
     @error_handler
     def _add_loads(self, values: dict) -> NoReturn:
         """Adds the loads."""
-        start_frame = int(values["start_loads"])
-        end_frame = int(values["end_loads"])
+        start_frame = int(values.get("start_loads") or 0)
+        end_frame = int(values.get("end_loads") or 0)
 
         if self.time.loads:
             if self._load_stats['total_loads'] != len(self.time.loads):
@@ -349,19 +375,99 @@ class App:
         self._update_displays()
         _popup_ok("Loads", "Load added successfully.")
 
+    # ── Input parsing helpers ──────────────────────────────────────────────────
+
+    @staticmethod
+    def _is_debug_info(text: str) -> bool:
+        """Returns True if the text looks like YouTube debug info JSON."""
+        return '{' in text and '"cmt"' in text
+
     def debug_info_to_frame(self, time: Time, debug_info: str) -> int:
-        """Converts debug info to a frame."""
+        """Converts YouTube debug info JSON to a frame number."""
+        start_pos = debug_info.find('{')
+        if start_pos == -1:
+            raise ValueError("The debug info provided is invalid.\nPlease re-enter debug info.")
+        debug_info = debug_info[start_pos:]
         try:
-            start_pos = debug_info.find('{')
-            if start_pos == -1:
-                raise ValueError("The debug info provided is invalid.\nPlease re-enter debug info.")
-            debug_info = debug_info[start_pos:]
-            parsed_debug_info = json.loads(debug_info)
-            cmt = parsed_debug_info["cmt"]
-            output = int(round(d(cmt) * d(time.framerate), 0))
-            return output
+            parsed = json.loads(debug_info)
+            cmt = parsed["cmt"]
         except (json.decoder.JSONDecodeError, KeyError):
             raise ValueError("The debug info provided is invalid.\nPlease re-enter debug info.")
+        output = int(round(d(str(cmt)) * d(str(time.framerate)), 0))
+        return output
+
+    def _clean_framerate(self, framerate: str) -> d:
+        """Cleans a framerate string into a valid Decimal.
+
+        Rules:
+        - Strip all non-numeric, non-decimal characters.
+        - If empty or no digits remain, return Decimal('0').
+        - Collapse multiple decimal points (keep only the first).
+        - Trailing decimal point gets a '0' appended.
+        """
+        cleaned = re.sub(r'[^0-9.]', '', framerate)
+        if not re.search(r'[0-9]', cleaned):
+            return d('0')
+        # Collapse multiple decimal points
+        if cleaned.count('.') > 1:
+            idx = cleaned.find('.')
+            cleaned = cleaned[:idx + 1] + cleaned[idx + 1:].replace('.', '')
+        if cleaned.endswith('.'):
+            cleaned += '0'
+        try:
+            return d(cleaned)
+        except (InvalidOperation, ValueError):
+            return d('0')
+
+    def _parse_frame_input(self, text: str, time: Time) -> int:
+        """Parse a frame input field according to the full validation spec:
+
+        1. If it looks like YouTube debug info, extract the frame from JSON.
+        2. Otherwise strip all non-numeric, non-decimal characters.
+        3. If empty after stripping, return 0.
+        4. If a decimal point is present, treat the value as a timestamp in
+           seconds and convert to a frame number (value * framerate, rounded).
+        5. Otherwise return the integer value.
+        """
+        text = text.strip()
+
+        # Step 1 — debug info
+        if self._is_debug_info(text):
+            return self.debug_info_to_frame(time, text)
+
+        # Step 2 — strip non-numeric/non-decimal characters
+        cleaned = re.sub(r'[^0-9.]', '', text)
+
+        # Step 3 — empty → 0
+        if not cleaned or not re.search(r'[0-9]', cleaned):
+            return 0
+
+        # Collapse multiple decimal points
+        if cleaned.count('.') > 1:
+            idx = cleaned.find('.')
+            cleaned = cleaned[:idx + 1] + cleaned[idx + 1:].replace('.', '')
+
+        # Step 4 — decimal → timestamp conversion
+        if '.' in cleaned:
+            try:
+                fps = d(str(time.framerate))
+                if fps == 0:
+                    return 0
+                return int(round(d(cleaned) * fps, 0))
+            except (InvalidOperation, ValueError):
+                return 0
+
+        # Step 5 — plain integer
+        try:
+            return int(cleaned)
+        except ValueError:
+            return 0
+
+    def clean_frame(self, frame: str) -> int:
+        """Legacy wrapper — cleans a frame string to an integer (no decimal/debug handling)."""
+        return self._parse_frame_input(frame, self.time)
+
+    # ── Widget accessors ───────────────────────────────────────────────────────
 
     def _set_input(self, key: str, value: str):
         """Updates a QLineEdit in the main window by object name."""
@@ -378,67 +484,37 @@ class App:
         widget = self.window.window.findChild(QLineEdit, key)
         return widget.text() if widget else ""
 
+    # ── Input event handlers ───────────────────────────────────────────────────
+
     def _set_framerate(self, new_value: str) -> NoReturn:
         """Handles the framerate input."""
         framerate = self._clean_framerate(new_value)
-        self._set_input("framerate", framerate)
+        self._set_input("framerate", str(framerate))
         self.time.mutate(framerate=framerate)
+        self._update_displays()
 
     @error_handler
     def _set_time(self, key: str, new_value: str) -> NoReturn:
-        """Handles the time frame inputs."""
-        time = new_value
-        if time and time[-1] == "}":
-            time = self.debug_info_to_frame(self.time, time)
-        else:
-            time = self.clean_frame(time)
-
+        """Handles the start/end frame inputs."""
+        frame = self._parse_frame_input(new_value, self.time)
         match key:
             case "start":
-                self.time.mutate(start_frame=time)
+                self.time.mutate(start_frame=frame)
             case "end":
-                self.time.mutate(end_frame=time)
-
-        self._set_input(key, time)
+                self.time.mutate(end_frame=frame)
+        self._set_input(key, frame)
         self._update_displays()
 
     def _set_loads(self, key: str, new_value: str) -> NoReturn:
-        """Handles the loads frame inputs."""
-        loads = new_value
-        if loads and loads[-1] == "}":
-            try:
-                loads = self.debug_info_to_frame(self.time, loads)
-            except ValueError as e:
-                loads = 0
-                self._show_error(e)
-        else:
-            loads = self.clean_frame(loads)
-        self._set_input(key, loads)
+        """Handles the loads start/end frame inputs."""
+        try:
+            frame = self._parse_frame_input(new_value, self.time)
+        except ValueError as e:
+            frame = 0
+            self._show_error(e)
+        self._set_input(key, frame)
 
-    def _clean_framerate(self, framerate: str) -> d:
-        """Cleans a framerate for input validation."""
-        cleaned_framerate = re.sub(r'[^0-9.]', '', framerate)
-        if not re.search(r'[0-9]', cleaned_framerate):
-            return "0"
-        if cleaned_framerate.count('.') > 1:
-            first_period_index = cleaned_framerate.find('.')
-            cleaned_framerate = (
-                cleaned_framerate[:first_period_index + 1]
-                + cleaned_framerate[first_period_index + 1:].replace('.', '')
-            )
-        if cleaned_framerate.endswith('.'):
-            cleaned_framerate += '0'
-        cleaned_framerate = d(cleaned_framerate)
-        return cleaned_framerate
-
-    def clean_frame(self, frame: str) -> int:
-        """Cleans a frame for input validation."""
-        if not frame or frame.isspace():
-            return 0
-        if not hasattr(self, '_digit_pattern'):
-            self._digit_pattern = re.compile(r'\d+')
-        match = self._digit_pattern.search(frame)
-        return int(match.group()) if match else 0
+    # ── File operations ────────────────────────────────────────────────────────
 
     def _new_time(self) -> NoReturn:
         """Creates a new time."""
@@ -567,24 +643,40 @@ class App:
             with open(self.file_path, "w") as file:
                 json.dump(self._convert_to_dict(), file)
 
+    # ── Mod note ───────────────────────────────────────────────────────────────
+
     @property
     def _mod_note(self) -> str:
         """Gets the mod note."""
+        # Guard against zero framerate to avoid DivisionUndefined
+        fps = self.time.framerate
+        if not fps or fps == 0:
+            start_time = 0
+            end_time = 0
+        else:
+            start_time = round(float(self.time.start_frame) / float(fps), self.time.precision)
+            end_time = round(float(self.time.end_frame) / float(fps), self.time.precision)
+
+        # Extract time components without calling the non-existent format_time_components method
+        hours, minutes, seconds, milliseconds = _time_components(self.time.with_loads)
+
         return self.settings_dict["mod_note_format"].format(
             time_with_loads=self.time.iso_format(False),
             time_without_loads=self.time.iso_format(True),
-            hours=self.time.format_time_components(self.time.with_loads)[0],
-            minutes=self.time.format_time_components(self.time.with_loads)[1],
-            seconds=self.time.format_time_components(self.time.with_loads)[2],
-            milliseconds=self.time.format_time_components(self.time.with_loads)[3],
+            hours=hours,
+            minutes=minutes,
+            seconds=seconds,
+            milliseconds=milliseconds,
             start_frame=self.time.start_frame,
             end_frame=self.time.end_frame,
-            start_time=round((self.time.start_frame / self.time.framerate), self.time.precision),
-            end_time=round((self.time.end_frame / self.time.framerate), self.time.precision),
+            start_time=start_time,
+            end_time=end_time,
             total_frames=self.time.length_with_loads,
-            fps=self.time.framerate,
+            fps=fps,
             plug="[Conner's Retime Tool](https://github.com/connerglover/conners-retime-tool)",
         )
+
+    # ── Display updates ────────────────────────────────────────────────────────
 
     def _update_displays(self) -> NoReturn:
         """Update time displays."""
@@ -592,9 +684,15 @@ class App:
         wl = self.window.window.findChild(ClickableLabel, "without_loads_display")
         ld = self.window.window.findChild(ClickableLabel, "loads_display")
         if wl:
-            wl.setText(self.time.iso_format(True))
+            try:
+                wl.setText(self.time.iso_format(True))
+            except (DivisionByZero, DivisionUndefined, InvalidOperation):
+                wl.setText("00.000")
         if ld:
-            ld.setText(self.time.iso_format(False))
+            try:
+                ld.setText(self.time.iso_format(False))
+            except (DivisionByZero, DivisionUndefined, InvalidOperation):
+                ld.setText("00.000")
 
     def _show_error(self, message):
         """Shows a popup message of the error."""
@@ -607,6 +705,8 @@ class App:
             for key in ("framerate", "start", "end", "start_loads", "end_loads")
         }
 
+    # ── Main event loop ────────────────────────────────────────────────────────
+
     def run(self) -> NoReturn:
         """Runs the application."""
         from PySide6.QtWidgets import QLineEdit, QPushButton
@@ -614,28 +714,22 @@ class App:
 
         win = self.window.window
 
-        # ── Wire up signals ────────────────────────────────────────────────────
-
-        # Menu actions
-        for action in win.menuBar().findChildren(type(win.menuBar().actions()[0])):
-            pass  # will use triggered signal below
-
         def _on_menu_action(action):
             key = action.data()
             self._dispatch(key, self._get_all_values())
-
-        for menu in win.menuBar().findChildren(type(win.menuBar())):
-            pass
 
         # Connect all QActions from all menus
         for action in win.findChildren(type(win.menuBar().actions()[0])):
             action.triggered.connect(lambda checked=False, a=action: _on_menu_action(a))
 
-        # Input fields
+        # Input fields — use editingFinished so we only validate on focus-out / Enter
+        # but also connect textEdited for live load-field cleaning
         for key in ("framerate", "start", "end", "start_loads", "end_loads"):
             inp = win.findChild(QLineEdit, key)
             if inp:
-                inp.textEdited.connect(lambda text, k=key: self._dispatch(k, {k: text}))
+                inp.editingFinished.connect(
+                    lambda k=key: self._dispatch(k, {k: self._get_input(k)})
+                )
 
         # Paste buttons
         for key in ("framerate", "start", "end", "start_loads", "end_loads"):
@@ -669,35 +763,25 @@ class App:
         match event:
             case "New Time":
                 self._new_time()
-
             case "Open Time":
                 self._open_time()
-
             case "Session History":
                 self._session_history()
-
             case "Save":
                 self._save_time()
-
             case "Save As":
                 self._save_as_time()
-
             case "Settings":
                 self._settings()
-
             case "Clear Loads":
                 self.time.clear_loads()
                 self._update_displays()
-
             case "Check for Updates":
                 self._check_for_updates()
-
             case "Report Issue":
                 open_url("https://forms.gle/mnmbgt6cBeL6Dykk6")
-
             case "Suggest Feature":
                 open_url("https://forms.gle/V5bPaQbcFsk6Cijr5")
-
             case "About":
                 _popup_ok(
                     "About",
@@ -707,49 +791,37 @@ class App:
                     "AmazinCris: Spanish Translations\n\n"
                     "© 2024 Conner Glover"
                 )
-
             case "Edit Loads":
                 self._edit_loads()
-
             case "Add Loads":
                 self._add_loads(values)
-
             case "Copy Mod Note":
-                _clipboard_set(self._mod_note)
-
+                try:
+                    _clipboard_set(self._mod_note)
+                except Exception as e:
+                    self._show_error(e)
             case "framerate_paste":
                 self._set_framerate(_clipboard_get())
-
             case "start_paste":
                 self._set_time("start", _clipboard_get())
-
             case "end_paste":
                 self._set_time("end", _clipboard_get())
-
             case "start_loads_paste":
                 self._set_loads("start_loads", _clipboard_get())
-
             case "end_loads_paste":
                 self._set_loads("end_loads", _clipboard_get())
-
             case "framerate":
                 self._set_framerate(values.get("framerate", ""))
-
             case "start":
                 self._set_time("start", values.get("start", ""))
-
             case "end":
                 self._set_time("end", values.get("end", ""))
-
             case "start_loads":
                 self._set_loads("start_loads", values.get("start_loads", ""))
-
             case "end_loads":
                 self._set_loads("end_loads", values.get("end_loads", ""))
-
             case "Exit":
                 self.window.window.close()
-
             case _ as e:
                 print(f"Unhandled event: {e}")
 
