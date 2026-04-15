@@ -112,7 +112,7 @@ class LoadViewer:
         while True:
             event, values = self.window.read()
 
-            if event is None or event == "done":
+            if event is None:
                 break
 
             elif event == "save_all":

@@ -20,7 +20,7 @@ from crt.base_gui import BaseGUI
 class LoadRow(QWidget):
     """A single load row with always-visible inline start/end frame inputs.
 
-    Layout:  Load N   [Start Frame Input]   [End Frame Input]   [Delete]
+    Layout:  Load N  [duration]  Start [input]  End [input]  [Delete]
     """
 
     delete_requested = Signal(int)
@@ -34,9 +34,20 @@ class LoadRow(QWidget):
         self.content = content
         self._build_ui()
 
+    def _load_duration_str(self) -> str:
+        """Returns the load duration as a formatted time string."""
+        try:
+            if self.framerate and self.framerate != 0:
+                t = round(d(self.load.length) / d(self.framerate), self.precision)
+            else:
+                t = d(0)
+            return str(t)
+        except Exception:
+            return "0"
+
     def _build_ui(self):
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(4, 3, 4, 3)
+        layout.setContentsMargins(4, 4, 4, 4)
         layout.setSpacing(8)
 
         # Load number label
@@ -44,6 +55,18 @@ class LoadRow(QWidget):
         num_lbl.setFont(QFont("Helvetica", 12, QFont.Weight.Bold))
         num_lbl.setFixedWidth(64)
         layout.addWidget(num_lbl)
+
+        # Duration display
+        self._duration_lbl = QLabel(self._load_duration_str())
+        self._duration_lbl.setObjectName(f"duration_{self.index}")
+        self._duration_lbl.setFont(QFont("Helvetica", 12))
+        self._duration_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._duration_lbl.setFixedWidth(80)
+        self._duration_lbl.setFixedHeight(28)
+        self._duration_lbl.setFrameShape(QFrame.Shape.StyledPanel)
+        self._duration_lbl.setFrameShadow(QFrame.Shadow.Sunken)
+        self._duration_lbl.setContentsMargins(4, 0, 4, 0)
+        layout.addWidget(self._duration_lbl)
 
         # Start frame label + input
         start_lbl = QLabel(self.content.get("Start Frame", "Start"))
@@ -84,9 +107,14 @@ class LoadRow(QWidget):
         return self.start_input.text(), self.end_input.text()
 
     def refresh(self):
-        """Refresh inputs from the underlying load object."""
+        """Refresh inputs and duration label from the underlying load object."""
         self.start_input.setText(str(self.load.start_frame))
         self.end_input.setText(str(self.load.end_frame))
+        self._duration_lbl.setText(self._load_duration_str())
+
+    def refresh_duration(self):
+        """Refresh only the duration label (after a save)."""
+        self._duration_lbl.setText(self._load_duration_str())
 
 
 class LoadViewerDialog(QDialog):
@@ -97,7 +125,7 @@ class LoadViewerDialog(QDialog):
         self._time = time
         self.content = content
         self.setWindowTitle(content.get("Loads", "Load Viewer"))
-        self.setMinimumWidth(560)
+        self.setMinimumWidth(640)
         self.setWindowModality(Qt.WindowModality.ApplicationModal)
         self._load_rows: dict[int, LoadRow] = {}
         self._build_ui(time, content)
@@ -131,7 +159,7 @@ class LoadViewerDialog(QDialog):
             self._load_rows[index] = row
 
         # Size scroll area to content
-        row_h = 38
+        row_h = 42
         max_vis = 8
         n = len(time.loads)
         self._scroll.setFixedHeight(min(n, max_vis) * row_h + 10)
@@ -142,7 +170,7 @@ class LoadViewerDialog(QDialog):
         sep.setFrameShadow(QFrame.Shadow.Sunken)
         outer.addWidget(sep)
 
-        # Save / Discard / Done buttons
+        # Save / Discard buttons (no Done button)
         btn_row = QHBoxLayout()
         btn_row.setSpacing(8)
 
@@ -157,13 +185,6 @@ class LoadViewerDialog(QDialog):
         btn_row.addWidget(self._btn_discard)
 
         btn_row.addStretch()
-
-        self._btn_done = QPushButton(content.get("Done", "Done"))
-        self._btn_done.setFont(QFont("Helvetica", 12))
-        self._btn_done.setMinimumHeight(34)
-        self._btn_done.setMinimumWidth(80)
-        btn_row.addWidget(self._btn_done)
-
         outer.addLayout(btn_row)
         self.adjustSize()
 
@@ -183,7 +204,6 @@ class LoadViewerGUI(BaseGUI):
 
         self.window._btn_save.clicked.connect(self._on_save_all)
         self.window._btn_discard.clicked.connect(self._on_discard)
-        self.window._btn_done.clicked.connect(lambda: self._emit("done"))
 
     def _on_save_all(self):
         """Collect all row values and emit a save_all event."""
